@@ -765,6 +765,7 @@ class BrSensor(SensorEntity):
     def _load_data(self, data):  # noqa: C901
         """Load the sensor with relevant data."""
         # Find sensor
+        warning_message = "No forecast for fcday=%s"
 
         # Check if we have a new measurement,
         # otherwise we do not have to update the sensor
@@ -791,7 +792,7 @@ class BrSensor(SensorEntity):
                 try:
                     condition = data.get(FORECAST)[fcday].get(CONDITION)
                 except IndexError:
-                    _LOGGER.warning("No forecast for fcday=%s", fcday)
+                    _LOGGER.warning(warning_message, fcday)
                     return False
 
                 if condition:
@@ -820,7 +821,7 @@ class BrSensor(SensorEntity):
                         sensor_type[:-3]
                     )
                 except IndexError:
-                    _LOGGER.warning("No forecast for fcday=%s", fcday)
+                    _LOGGER.warning(warning_message, fcday)
                     return False
 
                 if self.state is not None:
@@ -833,7 +834,7 @@ class BrSensor(SensorEntity):
                     sensor_type[:-3]
                 )
             except IndexError:
-                _LOGGER.warning("No forecast for fcday=%s", fcday)
+                _LOGGER.warning(warning_message, fcday)
                 return False
             return True
 
