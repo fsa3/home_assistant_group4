@@ -185,6 +185,36 @@ def _async_resolve_default_pipeline_settings(
         if tts_engine is None:
             tts_engine_id = None
 
+    # Handle str | None type for tts_engine_id properly
+    tts_engine_id, tts_language, tts_voice = _resolve_tts(
+        hass, tts_engine, tts_engine_id, pipeline_language
+    )
+
+    return {
+        "conversation_engine": conversation_engine_id,
+        "conversation_language": conversation_language,
+        "language": hass.config.language,
+        "name": pipeline_name,
+        "stt_engine": stt_engine_id,
+        "stt_language": stt_language,
+        "tts_engine": tts_engine_id,
+        "tts_language": tts_language,
+        "tts_voice": tts_voice,
+        "wake_word_entity": wake_word_entity,
+        "wake_word_id": wake_word_id,
+    }
+
+
+def _resolve_tts(
+    hass: HomeAssistant,
+    tts_engine: Any,
+    tts_engine_id: str | None,
+    pipeline_language: str,
+) -> tuple[str | None, str | None, str | None]:
+    """Resolve TTS engine ID, language, and voice."""
+    tts_language = None
+    tts_voice = None
+
     if tts_engine:
         tts_languages = language_util.matches(
             pipeline_language,
@@ -204,19 +234,7 @@ def _async_resolve_default_pipeline_settings(
             )
             tts_engine_id = None
 
-    return {
-        "conversation_engine": conversation_engine_id,
-        "conversation_language": conversation_language,
-        "language": hass.config.language,
-        "name": pipeline_name,
-        "stt_engine": stt_engine_id,
-        "stt_language": stt_language,
-        "tts_engine": tts_engine_id,
-        "tts_language": tts_language,
-        "tts_voice": tts_voice,
-        "wake_word_entity": wake_word_entity,
-        "wake_word_id": wake_word_id,
-    }
+    return tts_engine_id, tts_language, tts_voice
 
 
 async def _async_create_default_pipeline(
