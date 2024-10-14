@@ -168,20 +168,20 @@ async def load_auth_provider_module(
         ) from err
 
     if hass.config.skip_pip or not hasattr(module, "REQUIREMENTS"):
-        return module
-
-    if (processed := hass.data.get(DATA_REQS)) is None:
+        result = module
+    elif (processed := hass.data.get(DATA_REQS)) is None:
         processed = hass.data[DATA_REQS] = set()
     elif provider in processed:
-        return module
+        result = module
+    else:
+        reqs = module.REQUIREMENTS
+        await requirements.async_process_requirements(
+            hass, f"auth provider {provider}", reqs
+        )
+        processed.add(provider)
+        result = module
 
-    reqs = module.REQUIREMENTS
-    await requirements.async_process_requirements(
-        hass, f"auth provider {provider}", reqs
-    )
-
-    processed.add(provider)
-    return module
+    return result
 
 
 class LoginFlow(data_entry_flow.FlowHandler[AuthFlowResult, tuple[str, str]]):
