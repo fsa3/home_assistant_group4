@@ -1171,23 +1171,18 @@ async def async_api_set_mode(
     data: dict[str, Any] = {ATTR_ENTITY_ID: entity.entity_id}
     mode = directive.payload["mode"]  # Do not split the mode
 
-    if instance is None:
-        raise AlexaInvalidDirectiveError(DIRECTIVE_NOT_SUPPORTED)
-
-    assert instance is not None
-
     if instance.startswith(fan.DOMAIN):
         service = handle_fan_modes(instance, mode, entity, data)
     elif instance.startswith(humidifier.DOMAIN):
-        service = handle_humidifier_mode(instance, mode, entity, data)
+        service = handle_humidifier_mode(mode, entity, data)
     elif instance.startswith(remote.DOMAIN):
-        service = handle_remote_activity(instance, mode, entity, data)
+        service = handle_remote_activity(mode, entity, data)
     elif instance.startswith(water_heater.DOMAIN):
-        service = handle_water_heater_mode(instance, mode, entity, data)
+        service = handle_water_heater_mode(mode, entity, data)
     elif instance.startswith(cover.DOMAIN):
-        service = handle_cover_position(instance, mode, data)
+        service = handle_cover_position(mode)
     elif instance.startswith(valve.DOMAIN):
-        service = handle_valve_position(instance, mode, data)
+        service = handle_valve_position(mode)
     else:
         raise AlexaInvalidDirectiveError(DIRECTIVE_NOT_SUPPORTED)
 
@@ -1230,9 +1225,7 @@ def handle_fan_modes(
     raise AlexaInvalidDirectiveError(DIRECTIVE_NOT_SUPPORTED)
 
 
-def handle_humidifier_mode(
-    instance: str, mode: str, entity: Any, data: dict[str, Any]
-) -> str:
+def handle_humidifier_mode(mode: str, entity: Any, data: dict[str, Any]) -> str:
     """Handle humidifier mode."""
     mode_value = mode.split(".")[1]
     available_modes = entity.attributes.get(humidifier.ATTR_AVAILABLE_MODES)
@@ -1248,9 +1241,7 @@ def handle_humidifier_mode(
     )
 
 
-def handle_remote_activity(
-    instance: str, mode: str, entity: Any, data: dict[str, Any]
-) -> Any:
+def handle_remote_activity(mode: str, entity: Any, data: dict[str, Any]) -> Any:
     """Handle remote activity."""
     mode_value = mode.split(".")[1]
     activities = entity.attributes.get(remote.ATTR_ACTIVITY_LIST)
@@ -1262,9 +1253,7 @@ def handle_remote_activity(
     )
 
 
-def handle_water_heater_mode(
-    instance: str, mode: str, entity: Any, data: dict[str, Any]
-) -> Any:
+def handle_water_heater_mode(mode: str, entity: Any, data: dict[str, Any]) -> Any:
     """Handle water heater operation mode."""
     mode_value = mode.split(".")[1]
     operation_modes = entity.attributes.get(water_heater.ATTR_OPERATION_LIST)
@@ -1280,7 +1269,7 @@ def handle_water_heater_mode(
     )
 
 
-def handle_cover_position(instance: str, mode: str, data: dict[str, Any]) -> Any:
+def handle_cover_position(mode: str) -> Any:
     """Handle cover position."""
     position = mode.split(".")[1]
     if position == cover.STATE_CLOSED:
@@ -1292,7 +1281,7 @@ def handle_cover_position(instance: str, mode: str, data: dict[str, Any]) -> Any
     raise AlexaInvalidDirectiveError(f"Invalid cover position '{position}'")
 
 
-def handle_valve_position(instance: str, mode: str, data: dict[str, Any]) -> Any:
+def handle_valve_position(mode: str) -> Any:
     """Handle valve position state."""
     position = mode.split(".")[1]
     if position == valve.STATE_CLOSED:
