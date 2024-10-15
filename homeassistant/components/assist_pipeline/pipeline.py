@@ -1440,71 +1440,81 @@ class PipelineInput:
 
     async def validate(self) -> None:
         """Validate pipeline input against start stage."""
+        self._validate_pipeline_start_stage()
+        self._validate_pipeline_end_stage()
+
+        start_stage_index = PIPELINE_STAGE_ORDER.index(self.run.start_stage)
+        end_stage_index = PIPELINE_STAGE_ORDER.index(self.run.end_stage)
+
+        prepare_tasks = self._prepare_pipeline_tasks(start_stage_index, end_stage_index)
+
+        if prepare_tasks:
+            await asyncio.gather(*prepare_tasks)
+
+    def _validate_pipeline_start_stage(self) -> None:
+        """Validate the pipeline input based on the start stage."""
         if self.run.start_stage in (PipelineStage.WAKE_WORD, PipelineStage.STT):
-            if self.run.pipeline.stt_engine is None:
-                raise PipelineRunValidationError(
-                    "the pipeline does not support speech-to-text"
-                )
-            if self.stt_metadata is None:
-                raise PipelineRunValidationError(
-                    "stt_metadata is required for speech-to-text"
-                )
-            if self.stt_stream is None:
-                raise PipelineRunValidationError(
-                    "stt_stream is required for speech-to-text"
-                )
+            self._validate_stt_stage()
         elif self.run.start_stage == PipelineStage.INTENT:
-            if self.intent_input is None:
-                raise PipelineRunValidationError(
-                    "intent_input is required for intent recognition"
-                )
+            self._validate_intent_stage()
         elif self.run.start_stage == PipelineStage.TTS:
-            if self.tts_input is None:
-                raise PipelineRunValidationError(
-                    "tts_input is required for text-to-speech"
-                )
+            self._validate_tts_stage()
+
+    def _validate_stt_stage(self) -> None:
+        """Validate speech-to-text requirements."""
+        if self.run.pipeline.stt_engine is None:
+            raise PipelineRunValidationError(
+                "the pipeline does not support speech-to-text"
+            )
+        if self.stt_metadata is None:
+            raise PipelineRunValidationError(
+                "stt_metadata is required for speech-to-text"
+            )
+        if self.stt_stream is None:
+            raise PipelineRunValidationError(
+                "stt_stream is required for speech-to-text"
+            )
+
+    def _validate_intent_stage(self) -> None:
+        """Validate intent recognition requirements."""
+        if self.intent_input is None:
+            raise PipelineRunValidationError(
+                "intent_input is required for intent recognition"
+            )
+
+    def _validate_tts_stage(self) -> None:
+        """Validate text-to-speech requirements."""
+        if self.tts_input is None:
+            raise PipelineRunValidationError(
+                "tts_input is required for text-to-speech"
+            )
+
+    def _validate_pipeline_end_stage(self) -> None:
+        """Validate pipeline input based on the end stage."""
         if self.run.end_stage == PipelineStage.TTS:
             if self.run.pipeline.tts_engine is None:
                 raise PipelineRunValidationError(
                     "the pipeline does not support text-to-speech"
                 )
 
-        start_stage_index = PIPELINE_STAGE_ORDER.index(self.run.start_stage)
-        end_stage_index = PIPELINE_STAGE_ORDER.index(self.run.end_stage)
-
+    def _prepare_pipeline_tasks(self, start_stage_index: int, end_stage_index: int) -> list:
+        """Prepare the pipeline tasks based on the start and end stages."""
         prepare_tasks = []
 
-        if (
-            start_stage_index
-            <= PIPELINE_STAGE_ORDER.index(PipelineStage.WAKE_WORD)
-            <= end_stage_index
-        ):
+        if start_stage_index <= PIPELINE_STAGE_ORDER.index(PipelineStage.WAKE_WORD) <= end_stage_index:
             prepare_tasks.append(self.run.prepare_wake_word_detection())
 
-        if (
-            start_stage_index
-            <= PIPELINE_STAGE_ORDER.index(PipelineStage.STT)
-            <= end_stage_index
-        ):
-            # self.stt_metadata can't be None or we'd raise above
+        if start_stage_index <= PIPELINE_STAGE_ORDER.index(PipelineStage.STT) <= end_stage_index:
             prepare_tasks.append(self.run.prepare_speech_to_text(self.stt_metadata))  # type: ignore[arg-type]
 
-        if (
-            start_stage_index
-            <= PIPELINE_STAGE_ORDER.index(PipelineStage.INTENT)
-            <= end_stage_index
-        ):
+        if start_stage_index <= PIPELINE_STAGE_ORDER.index(PipelineStage.INTENT) <= end_stage_index:
             prepare_tasks.append(self.run.prepare_recognize_intent())
 
-        if (
-            start_stage_index
-            <= PIPELINE_STAGE_ORDER.index(PipelineStage.TTS)
-            <= end_stage_index
-        ):
+        if start_stage_index <= PIPELINE_STAGE_ORDER.index(PipelineStage.TTS) <= end_stage_index:
             prepare_tasks.append(self.run.prepare_text_to_speech())
 
-        if prepare_tasks:
-            await asyncio.gather(*prepare_tasks)
+        return prepare_tasks
+
 
 
 class PipelinePreferred(CollectionError):
