@@ -1491,106 +1491,148 @@ class AlexaModeController(AlexaCapability):
         return None
 
     def capability_resources(self) -> dict[str, list[dict[str, Any]]]:
-        """Main function that selects the appropriate handler based on the instance.
-
-        It checks the device's domain (e.g., fan, humidifier) and uses the corresponding
-        handler function to generate and return the Alexa capability resource.
-        """
-        # Map device domains to corresponding handler functions
-        handlers = {
-            fan.DOMAIN: self._get_fan_capability_resources,
-            humidifier.DOMAIN: self._get_humidifier_capability_resources,
-            water_heater.DOMAIN: self._get_water_heater_capability_resources,
-            remote.DOMAIN: self._get_remote_capability_resources,
-            cover.DOMAIN: self._get_cover_capability_resources,
-            valve.DOMAIN: self._get_valve_capability_resources,
+        """Return capabilityResources object."""
+        # Mapping device types to their corresponding handler methods
+        device_handlers = {
+            f"{fan.DOMAIN}.{fan.ATTR_DIRECTION}": self._handle_fan_direction,
+            f"{fan.DOMAIN}.{fan.ATTR_PRESET_MODE}": self._handle_fan_preset_mode,
+            f"{humidifier.DOMAIN}.{humidifier.ATTR_MODE}": self._handle_humidifier_mode,
+            f"{water_heater.DOMAIN}.{water_heater.ATTR_OPERATION_MODE}": self._handle_water_heater_operation_mode,
+            f"{remote.DOMAIN}.{remote.ATTR_ACTIVITY}": self._handle_remote_activity,
+            f"{cover.DOMAIN}.{cover.ATTR_POSITION}": self._handle_cover_position,
+            f"{valve.DOMAIN}.state": self._handle_valve_position,
         }
-
-        # Determine the domain of the current instance (before the dot)
-        domain = self.instance.split('.')[0]
-        handler = handlers.get(domain)
-
-        # If a handler for the domain exists, call it; otherwise, return an empty dict
-        if handler:
-            return handler()
+        # Check if the instance matches a device handler and call the appropriate handler method
+        if self.instance in device_handlers:
+            return device_handlers[self.instance]()
         return {}
 
- # Device-specific capability functions
+    # Handles fan direction (e.g. forward and reverse)
+    def _handle_fan_direction(self) -> dict[str, list[dict[str, Any]]]:
+        self._resource = AlexaModeResource(
+            [AlexaGlobalCatalog.SETTING_DIRECTION], False
+        )
+        self._resource.add_mode(
+            f"{fan.ATTR_DIRECTION}.{fan.DIRECTION_FORWARD}", [fan.DIRECTION_FORWARD]
+        )
+        self._resource.add_mode(
+            f"{fan.ATTR_DIRECTION}.{fan.DIRECTION_REVERSE}", [fan.DIRECTION_REVERSE]
+        )
+        return self._resource.serialize_capability_resources()
 
-    def _get_fan_capability_resources(self) -> dict[str, list[dict[str, Any]]]:
-        """Handles fan-related capability resources based on the instance attribute."""
-        if self.instance == f"{fan.DOMAIN}.{fan.ATTR_DIRECTION}":
-            # Fan direction modes: Forward and Reverse
-            modes = [fan.DIRECTION_FORWARD, fan.DIRECTION_REVERSE]
-            return self._create_mode_resource(fan.ATTR_DIRECTION, modes)
-        elif self.instance == f"{fan.DOMAIN}.{fan.ATTR_PRESET_MODE}":
-            # Fan preset modes (with fallback if only one mode is present)
-            preset_modes = self.entity.attributes.get(fan.ATTR_PRESET_MODES) or []
-            preset_modes = self._ensure_multiple_modes(preset_modes)
-            return self._create_mode_resource(fan.ATTR_PRESET_MODE, preset_modes)
+    # Handles fan preset modes (e.g. fan speed modes)
+    def _handle_fan_preset_mode(self) -> dict[str, list[dict[str, Any]]]:
+        self._resource = AlexaModeResource([AlexaGlobalCatalog.SETTING_PRESET], False)
+        preset_modes = self.entity.attributes.get(fan.ATTR_PRESET_MODES) or []
 
-    def _get_humidifier_capability_resources(self) -> dict[str, list[dict[str, Any]]]:
-        """Handles humidifier-related capability resources based on the instance attribute."""
-        if self.instance == f"{humidifier.DOMAIN}.{humidifier.ATTR_MODE}":
-            # Humidifier modes (with fallback if only one mode is present)
-            modes = self.entity.attributes.get(humidifier.ATTR_AVAILABLE_MODES) or []
-            modes = self._ensure_multiple_modes(modes)
-            return self._create_mode_resource(humidifier.ATTR_MODE, modes)
+        for preset_mode in preset_modes:
+            self._resource.add_mode(
+                f"{fan.ATTR_PRESET_MODE}.{preset_mode}", [preset_mode]
+            )
 
-    def _get_water_heater_capability_resources(self) -> dict[str, list[dict[str, Any]]]:
-        """Handles water heater-related capability resources based on the instance attribute."""
-        if self.instance == f"{water_heater.DOMAIN}.{water_heater.ATTR_OPERATION_MODE}":
-            # Water heater operation modes (with fallback if only one mode is present)
-            operation_modes = self.entity.attributes.get(water_heater.ATTR_OPERATION_LIST) or []
-            operation_modes = self._ensure_multiple_modes(operation_modes)
-            return self._create_mode_resource(water_heater.ATTR_OPERATION_MODE, operation_modes)
+        if len(preset_modes) == 1:
+            self._resource.add_mode(
+                f"{fan.ATTR_PRESET_MODE}.{PRESET_MODE_NA}", [PRESET_MODE_NA]
+            )
 
-    def _get_remote_capability_resources(self) -> dict[str, list[dict[str, Any]]]:
-        """Handles remote control-related capability resources based on the instance attribute."""
-        if self.instance == f"{remote.DOMAIN}.{remote.ATTR_ACTIVITY}":
-            # Remote activity modes (with fallback if only one mode is present)
-            activities = self.entity.attributes.get(remote.ATTR_ACTIVITY_LIST) or []
-            activities = self._ensure_multiple_modes(activities)
-            return self._create_mode_resource(remote.ATTR_ACTIVITY, activities)
+        return self._resource.serialize_capability_resources()
 
-    def _get_cover_capability_resources(self) -> dict[str, list[dict[str, Any]]]:
-        """Handles cover-related capability resources based on the instance attribute."""
-        if self.instance == f"{cover.DOMAIN}.{cover.ATTR_POSITION}":
-            # Cover position modes: Open, Closed, and Custom
-            modes = [cover.STATE_OPEN, cover.STATE_CLOSED, "custom"]
-            return self._create_mode_resource(cover.ATTR_POSITION, modes)
+    # Handles humidifier modes (e.g. mode settings like sleep, normal)
+    def _handle_humidifier_mode(self) -> dict[str, list[dict[str, Any]]]:
+        self._resource = AlexaModeResource([AlexaGlobalCatalog.SETTING_MODE], False)
+        modes = self.entity.attributes.get(humidifier.ATTR_AVAILABLE_MODES) or []
 
-    def _get_valve_capability_resources(self) -> dict[str, list[dict[str, Any]]]:
-        """Handles valve-related capability resources based on the instance attribute."""
-        if self.instance == f"{valve.DOMAIN}.state":
-            # Check valve's supported features and create corresponding modes
-            supported_features = self.entity.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
-            modes = []
-            if supported_features & valve.ValveEntityFeature.OPEN:
-                modes.append(valve.STATE_OPEN)
-            if supported_features & valve.ValveEntityFeature.CLOSE:
-                modes.append(valve.STATE_CLOSED)
-
-            # Ensure there are at least two modes by appending a placeholder if necessary
-            modes = self._ensure_multiple_modes(modes)
-            return self._create_mode_resource("state", modes)
-
-# Helper functions
-
-    def _create_mode_resource(self, setting: str, modes: list[str]) -> dict[str, list[dict[str, Any]]]:
-        """Creates an AlexaModeResource and adds the modes to it."""
-        resource = AlexaModeResource([setting], False)
         for mode in modes:
-            # Add each mode to the Alexa resource with the proper setting
-            resource.add_mode(f"{setting}.{mode}", [mode])
-        return resource.serialize_capability_resources()
+            self._resource.add_mode(f"{humidifier.ATTR_MODE}.{mode}", [mode])
 
-    def _ensure_multiple_modes(self, modes: list[str], placeholder: str = PRESET_MODE_NA) -> list[str]:
-        """Ensure that there are at least two modes; if only one mode is present, add a placeholder."""
         if len(modes) == 1:
-            modes.append(placeholder)
-        return modes
+            self._resource.add_mode(
+                f"{humidifier.ATTR_MODE}.{PRESET_MODE_NA}", [PRESET_MODE_NA]
+            )
 
+        return self._resource.serialize_capability_resources()
+
+    # Handles water heater operation modes (e.g. off, eco, heat)
+    def _handle_water_heater_operation_mode(self) -> dict[str, list[dict[str, Any]]]:
+        self._resource = AlexaModeResource([AlexaGlobalCatalog.SETTING_MODE], False)
+        operation_modes = (
+            self.entity.attributes.get(water_heater.ATTR_OPERATION_LIST) or []
+        )
+
+        for operation_mode in operation_modes:
+            self._resource.add_mode(
+                f"{water_heater.ATTR_OPERATION_MODE}.{operation_mode}", [operation_mode]
+            )
+
+        # Add a fake mode if there's only one mode to avoid breaking Alexa discovery
+        if len(operation_modes) == 1:
+            self._resource.add_mode(
+                f"{water_heater.ATTR_OPERATION_MODE}.{PRESET_MODE_NA}", [PRESET_MODE_NA]
+            )
+
+        return self._resource.serialize_capability_resources()
+
+    # Handles remote control activities (e.g. watching TV, playing games)
+    def _handle_remote_activity(self) -> dict[str, list[dict[str, Any]]]:
+        self._resource = AlexaModeResource([AlexaGlobalCatalog.SETTING_MODE], False)
+        activities = self.entity.attributes.get(remote.ATTR_ACTIVITY_LIST) or []
+
+        for activity in activities:
+            self._resource.add_mode(f"{remote.ATTR_ACTIVITY}.{activity}", [activity])
+
+        if len(activities) == 1:
+            self._resource.add_mode(
+                f"{remote.ATTR_ACTIVITY}.{PRESET_MODE_NA}", [PRESET_MODE_NA]
+            )
+
+        return self._resource.serialize_capability_resources()
+
+    # Handles cover position (e.g. open, closed, and custom positions)
+    def _handle_cover_position(self) -> dict[str, list[dict[str, Any]]]:
+        self._resource = AlexaModeResource(
+            ["Position", AlexaGlobalCatalog.SETTING_OPENING], False
+        )
+        self._resource.add_mode(
+            f"{cover.ATTR_POSITION}.{cover.STATE_OPEN}", [AlexaGlobalCatalog.VALUE_OPEN]
+        )
+        self._resource.add_mode(
+            f"{cover.ATTR_POSITION}.{cover.STATE_CLOSED}",
+            [AlexaGlobalCatalog.VALUE_CLOSE],
+        )
+        self._resource.add_mode(
+            f"{cover.ATTR_POSITION}.custom",
+            ["Custom", AlexaGlobalCatalog.SETTING_PRESET],
+        )
+
+        return self._resource.serialize_capability_resources()
+
+    # Handles valve position (e.g., open, closed)
+    def _handle_valve_position(self) -> dict[str, list[dict[str, Any]]]:
+        supported_features = self.entity.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
+        self._resource = AlexaModeResource(
+            ["Preset", AlexaGlobalCatalog.SETTING_PRESET], False
+        )
+        modes = 0
+
+        # Add the open mode if the valve supports opening
+        if supported_features & valve.ValveEntityFeature.OPEN:
+            self._resource.add_mode(
+                f"state.{valve.STATE_OPEN}", ["Open", AlexaGlobalCatalog.SETTING_PRESET]
+            )
+            modes += 1
+
+        # Add the closed mode if the valve supports closing
+        if supported_features & valve.ValveEntityFeature.CLOSE:
+            self._resource.add_mode(
+                f"state.{valve.STATE_CLOSED}",
+                ["Closed", AlexaGlobalCatalog.SETTING_PRESET],
+            )
+            modes += 1
+
+        if modes == 1:
+            self._resource.add_mode(f"state.{PRESET_MODE_NA}", [PRESET_MODE_NA])
+
+        return self._resource.serialize_capability_resources()
 
     def semantics(self) -> dict[str, Any] | None:
         """Build and return semantics object."""
