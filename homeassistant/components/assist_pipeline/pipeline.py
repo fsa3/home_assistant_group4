@@ -9,6 +9,7 @@ from collections.abc import AsyncGenerator, AsyncIterable, Callable
 from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 import logging
+import math
 from pathlib import Path
 from queue import Empty, Queue
 from threading import Thread
@@ -1212,7 +1213,9 @@ class PipelineRun:
         """Apply volume transformation only (no VAD/audio enhancements) with optional chunking."""
         timestamp_ms = 0
         async for chunk in audio_stream:
-            if self.audio_settings.volume_multiplier != 1.0:
+            if not math.isclose(
+                self.audio_settings.volume_multiplier, 1.0, rel_tol=1e-9
+            ):
                 chunk = _multiply_volume(chunk, self.audio_settings.volume_multiplier)
 
             for sub_chunk in chunk_samples(
@@ -1233,7 +1236,9 @@ class PipelineRun:
 
         timestamp_ms = 0
         async for dirty_samples in audio_stream:
-            if self.audio_settings.volume_multiplier != 1.0:
+            if not math.isclose(
+                self.audio_settings.volume_multiplier, 1.0, rel_tol=1e-9
+            ):
                 # Static gain
                 dirty_samples = _multiply_volume(
                     dirty_samples, self.audio_settings.volume_multiplier
@@ -1531,12 +1536,12 @@ class PipelineStorageCollection(
 
     async def _async_load_data(self) -> SerializedPipelineStorageCollection | None:
         """Load the data."""
-        if not (data := await super()._async_load_data()):
+        data = await super()._async_load_data()
+        if not data:
             pipeline = await _async_create_default_pipeline(self.hass, self)
             self._preferred_item = pipeline.id
-            return data
-
-        self._preferred_item = data["preferred_item"]
+        else:
+            self._preferred_item = data["preferred_item"]
 
         return data
 
