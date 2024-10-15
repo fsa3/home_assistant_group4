@@ -1811,79 +1811,131 @@ class AlexaRangeController(AlexaCapability):
         return None
 
     def capability_resources(self) -> dict[str, list[dict[str, Any]]]:
-        """
-        Return capabilityResources object based on the device type.
+        """Return capabilityResources object."""
 
-        This function checks the self.instance attribute against various device-specific instances
-        and returns a corresponding resource object if a match is found. If no match is found,
-        it returns an empty dictionary.
-        """
-        # Check for fan direction capability
-        if self._check_fan_direction():
-            return self._create_fan_direction_resource()
+        # Fan Speed Percentage Resources
+        if self.instance == f"{fan.DOMAIN}.{fan.ATTR_PERCENTAGE}":
+            percentage_step = self.entity.attributes.get(fan.ATTR_PERCENTAGE_STEP)
+            self._resource = AlexaPresetResource(
+                labels=["Percentage", AlexaGlobalCatalog.SETTING_FAN_SPEED],
+                min_value=0,
+                max_value=100,
+                # precision must be a divider of 100 and must be an integer; set step
+                # size to 1 for a consistent behavior except for on/off fans
+                precision=1 if percentage_step else 100,
+                unit=AlexaGlobalCatalog.UNIT_PERCENT,
+            )
+            return self._resource.serialize_capability_resources()
 
-        # Check for fan preset mode capability
-        if self._check_fan_preset_mode():
-            return self._create_fan_preset_mode_resource()
+        # Humidifier Target Humidity Resources
+        if self.instance == f"{humidifier.DOMAIN}.{humidifier.ATTR_HUMIDITY}":
+            self._resource = AlexaPresetResource(
+                labels=["Humidity", "Percentage", "Target humidity"],
+                min_value=self.entity.attributes.get(humidifier.ATTR_MIN_HUMIDITY, 10),
+                max_value=self.entity.attributes.get(humidifier.ATTR_MAX_HUMIDITY, 90),
+                precision=1,
+                unit=AlexaGlobalCatalog.UNIT_PERCENT,
+            )
+            return self._resource.serialize_capability_resources()
 
-        # Check for humidifier mode capability
-        if self._check_humidifier_mode():
-            return self._create_humidifier_mode_resource()
+        # Cover Position Resources
+        if self.instance == f"{cover.DOMAIN}.{cover.ATTR_POSITION}":
+            self._resource = AlexaPresetResource(
+                ["Position", AlexaGlobalCatalog.SETTING_OPENING],
+                min_value=0,
+                max_value=100,
+                precision=1,
+                unit=AlexaGlobalCatalog.UNIT_PERCENT,
+            )
+            return self._resource.serialize_capability_resources()
 
-        # Check for water heater operation mode capability
-        if self._check_water_heater_operation_mode():
-            return self._create_water_heater_operation_mode_resource()
+        # Cover Tilt Resources
+        if self.instance == f"{cover.DOMAIN}.tilt":
+            self._resource = AlexaPresetResource(
+                ["Tilt", "Angle", AlexaGlobalCatalog.SETTING_DIRECTION],
+                min_value=0,
+                max_value=100,
+                precision=1,
+                unit=AlexaGlobalCatalog.UNIT_PERCENT,
+            )
+            return self._resource.serialize_capability_resources()
 
-        # Check for remote activity capability
-        if self._check_remote_activity():
-            return self._create_remote_activity_resource()
+        # Input Number Value
+        if self.instance == f"{input_number.DOMAIN}.{input_number.ATTR_VALUE}":
+            min_value = float(self.entity.attributes[input_number.ATTR_MIN])
+            max_value = float(self.entity.attributes[input_number.ATTR_MAX])
+            precision = float(self.entity.attributes.get(input_number.ATTR_STEP, 1))
+            unit = self.entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
 
-        # Check for cover position capability
-        if self._check_cover_position():
-            return self._create_cover_position_resource()
+            self._resource = AlexaPresetResource(
+                ["Value", get_resource_by_unit_of_measurement(self.entity)],
+                min_value=min_value,
+                max_value=max_value,
+                precision=precision,
+                unit=unit,
+            )
+            self._resource.add_preset(
+                value=min_value, labels=[AlexaGlobalCatalog.VALUE_MINIMUM]
+            )
+            self._resource.add_preset(
+                value=max_value, labels=[AlexaGlobalCatalog.VALUE_MAXIMUM]
+            )
+            return self._resource.serialize_capability_resources()
 
-        # Check for valve position capability
-        if self._check_valve_position():
-            return self._create_valve_position_resource()
+        # Number Value
+        if self.instance == f"{number.DOMAIN}.{number.ATTR_VALUE}":
+            min_value = float(self.entity.attributes[number.ATTR_MIN])
+            max_value = float(self.entity.attributes[number.ATTR_MAX])
+            precision = float(self.entity.attributes.get(number.ATTR_STEP, 1))
+            unit = self.entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
 
-        # If no match is found, return an empty dictionary
+            self._resource = AlexaPresetResource(
+                ["Value", get_resource_by_unit_of_measurement(self.entity)],
+                min_value=min_value,
+                max_value=max_value,
+                precision=precision,
+                unit=unit,
+            )
+            self._resource.add_preset(
+                value=min_value, labels=[AlexaGlobalCatalog.VALUE_MINIMUM]
+            )
+            self._resource.add_preset(
+                value=max_value, labels=[AlexaGlobalCatalog.VALUE_MAXIMUM]
+            )
+            return self._resource.serialize_capability_resources()
+
+        # Vacuum Fan Speed Resources
+        if self.instance == f"{vacuum.DOMAIN}.{vacuum.ATTR_FAN_SPEED}":
+            speed_list = self.entity.attributes[vacuum.ATTR_FAN_SPEED_LIST]
+            max_value = len(speed_list) - 1
+            self._resource = AlexaPresetResource(
+                labels=[AlexaGlobalCatalog.SETTING_FAN_SPEED],
+                min_value=0,
+                max_value=max_value,
+                precision=1,
+            )
+            for index, speed in enumerate(speed_list):
+                labels = [speed.replace("_", " ")]
+                if index == 1:
+                    labels.append(AlexaGlobalCatalog.VALUE_MINIMUM)
+                if index == max_value:
+                    labels.append(AlexaGlobalCatalog.VALUE_MAXIMUM)
+                self._resource.add_preset(value=index, labels=labels)
+
+            return self._resource.serialize_capability_resources()
+
+        # Valve Position Resources
+        if self.instance == f"{valve.DOMAIN}.{valve.ATTR_POSITION}":
+            self._resource = AlexaPresetResource(
+                ["Opening", AlexaGlobalCatalog.SETTING_OPENING],
+                min_value=0,
+                max_value=100,
+                precision=1,
+                unit=AlexaGlobalCatalog.UNIT_PERCENT,
+            )
+            return self._resource.serialize_capability_resources()
+
         return {}
-
-    # Helper function to check for fan direction capability
-    def _check_fan_direction(self) -> bool:
-        # Check if the instance matches the fan direction domain and attribute
-        return self.instance == f"{fan.DOMAIN}.{fan.ATTR_DIRECTION}"
-
-    # Helper function to check for fan preset mode capability
-    def _check_fan_preset_mode(self) -> bool:
-        # Check if the instance matches the fan preset mode domain and attribute
-        return self.instance == f"{fan.DOMAIN}.{fan.ATTR_PRESET_MODE}"
-
-    # Helper function to check for humidifier mode capability
-    def _check_humidifier_mode(self) -> bool:
-        # Check if the instance matches the humidifier mode domain and attribute
-        return self.instance == f"{humidifier.DOMAIN}.{humidifier.ATTR_MODE}"
-
-    # Helper function to check for water heater operation mode capability
-    def _check_water_heater_operation_mode(self) -> bool:
-        # Check if the instance matches the water heater operation mode domain and attribute
-        return self.instance == f"{water_heater.DOMAIN}.{water_heater.ATTR_OPERATION_MODE}"
-
-    # Helper function to check for remote activity capability
-    def _check_remote_activity(self) -> bool:
-        # Check if the instance matches the remote activity domain and attribute
-        return self.instance == f"{remote.DOMAIN}.{remote.ATTR_ACTIVITY}"
-
-    # Helper function to check for cover position capability
-    def _check_cover_position(self) -> bool:
-        # Check if the instance matches the cover position domain and attribute
-        return self.instance == f"{cover.DOMAIN}.{cover.ATTR_POSITION}"
-
-    # Helper function to check for valve position capability
-    def _check_valve_position(self) -> bool:
-        # Check if the instance matches the valve position domain and attribute
-        return self.instance == f"{valve.DOMAIN}.state"
-
 
     def semantics(self) -> dict[str, Any] | None:
         """Build and return semantics object."""
