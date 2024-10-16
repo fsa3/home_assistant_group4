@@ -59,8 +59,6 @@ from .const import (
 )
 from .util import BrData
 
-warning_message = "No forecast for fcday=%s"
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -73,7 +71,7 @@ WEATHER_WINDY_LABEL = "mdi:weather-windy"
 COMPAS_OUTLINE_LABEL = "mdi:compass-outline"
 WEATHER_POURING_LABEL = "mdi:weather-pouring"
 WEATHER_PARTLY_CLOUDY_LABEL = "mdi:weather-partly-cloudy"
-
+WARNING_MESSAGE = "No forecast for fcday=%s"
 
 # Schedule next call after (minutes):
 SCHEDULE_OK = 10
@@ -826,7 +824,7 @@ class BrSensor(SensorEntity):
         try:
             condition = data.get(FORECAST)[fcday].get(CONDITION)
         except IndexError:
-            _LOGGER.warning(warning_message, fcday)
+            _LOGGER.warning(WARNING_MESSAGE, fcday)
             return False
 
         if condition:
@@ -854,7 +852,7 @@ class BrSensor(SensorEntity):
         try:
             self._attr_native_value = data.get(FORECAST)[fcday].get(WINDSPEED[:-3])
         except IndexError:
-            _LOGGER.warning(warning_message, fcday)
+            _LOGGER.warning(WARNING_MESSAGE, fcday)
             return False
 
         if self.state is not None:
@@ -865,7 +863,7 @@ class BrSensor(SensorEntity):
         try:
             self._attr_native_value = data.get(FORECAST)[fcday].get(sensor_type[:-3])
         except IndexError:
-            _LOGGER.warning(warning_message, fcday)
+            _LOGGER.warning(WARNING_MESSAGE, fcday)
             return False
         return True
 
