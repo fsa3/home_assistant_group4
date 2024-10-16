@@ -186,6 +186,36 @@ def _async_resolve_default_pipeline_settings(
         if tts_engine is None:
             tts_engine_id = None
 
+    # Handle str | None type for tts_engine_id properly
+    tts_engine_id, tts_language, tts_voice = _resolve_tts(
+        hass, tts_engine, tts_engine_id, pipeline_language
+    )
+
+    return {
+        "conversation_engine": conversation_engine_id,
+        "conversation_language": conversation_language,
+        "language": hass.config.language,
+        "name": pipeline_name,
+        "stt_engine": stt_engine_id,
+        "stt_language": stt_language,
+        "tts_engine": tts_engine_id,
+        "tts_language": tts_language,
+        "tts_voice": tts_voice,
+        "wake_word_entity": wake_word_entity,
+        "wake_word_id": wake_word_id,
+    }
+
+
+def _resolve_tts(
+    hass: HomeAssistant,
+    tts_engine: Any,
+    tts_engine_id: str | None,
+    pipeline_language: str,
+) -> tuple[str | None, str | None, str | None]:
+    """Resolve TTS engine ID, language, and voice."""
+    tts_language = None
+    tts_voice = None
+
     if tts_engine:
         tts_languages = language_util.matches(
             pipeline_language,
@@ -205,19 +235,7 @@ def _async_resolve_default_pipeline_settings(
             )
             tts_engine_id = None
 
-    return {
-        "conversation_engine": conversation_engine_id,
-        "conversation_language": conversation_language,
-        "language": hass.config.language,
-        "name": pipeline_name,
-        "stt_engine": stt_engine_id,
-        "stt_language": stt_language,
-        "tts_engine": tts_engine_id,
-        "tts_language": tts_language,
-        "tts_voice": tts_voice,
-        "wake_word_entity": wake_word_entity,
-        "wake_word_id": wake_word_id,
-    }
+    return tts_engine_id, tts_language, tts_voice
 
 
 async def _async_create_default_pipeline(
@@ -1490,9 +1508,7 @@ class PipelineInput:
     def _validate_tts_stage(self) -> None:
         """Validate text-to-speech requirements."""
         if self.tts_input is None:
-            raise PipelineRunValidationError(
-                "tts_input is required for text-to-speech"
-            )
+            raise PipelineRunValidationError("tts_input is required for text-to-speech")
 
     def _validate_pipeline_end_stage(self) -> None:
         """Validate pipeline input based on the end stage."""
@@ -1502,24 +1518,41 @@ class PipelineInput:
                     "the pipeline does not support text-to-speech"
                 )
 
-    def _prepare_pipeline_tasks(self, start_stage_index: int, end_stage_index: int) -> list:
+    def _prepare_pipeline_tasks(
+        self, start_stage_index: int, end_stage_index: int
+    ) -> list:
         """Prepare the pipeline tasks based on the start and end stages."""
         prepare_tasks = []
 
-        if start_stage_index <= PIPELINE_STAGE_ORDER.index(PipelineStage.WAKE_WORD) <= end_stage_index:
+        if (
+            start_stage_index
+            <= PIPELINE_STAGE_ORDER.index(PipelineStage.WAKE_WORD)
+            <= end_stage_index
+        ):
             prepare_tasks.append(self.run.prepare_wake_word_detection())
 
-        if start_stage_index <= PIPELINE_STAGE_ORDER.index(PipelineStage.STT) <= end_stage_index:
+        if (
+            start_stage_index
+            <= PIPELINE_STAGE_ORDER.index(PipelineStage.STT)
+            <= end_stage_index
+        ):
             prepare_tasks.append(self.run.prepare_speech_to_text(self.stt_metadata))  # type: ignore[arg-type]
 
-        if start_stage_index <= PIPELINE_STAGE_ORDER.index(PipelineStage.INTENT) <= end_stage_index:
+        if (
+            start_stage_index
+            <= PIPELINE_STAGE_ORDER.index(PipelineStage.INTENT)
+            <= end_stage_index
+        ):
             prepare_tasks.append(self.run.prepare_recognize_intent())
 
-        if start_stage_index <= PIPELINE_STAGE_ORDER.index(PipelineStage.TTS) <= end_stage_index:
+        if (
+            start_stage_index
+            <= PIPELINE_STAGE_ORDER.index(PipelineStage.TTS)
+            <= end_stage_index
+        ):
             prepare_tasks.append(self.run.prepare_text_to_speech())
 
         return prepare_tasks
-
 
 
 class PipelinePreferred(CollectionError):

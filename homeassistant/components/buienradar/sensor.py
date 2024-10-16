@@ -59,6 +59,8 @@ from .const import (
 )
 from .util import BrData
 
+warning_message = "No forecast for fcday=%s"
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -824,7 +826,7 @@ class BrSensor(SensorEntity):
         try:
             condition = data.get(FORECAST)[fcday].get(CONDITION)
         except IndexError:
-            _LOGGER.warning("No forecast for fcday=%s", fcday)
+            _LOGGER.warning(warning_message, fcday)
             return False
 
         if condition:
@@ -852,7 +854,7 @@ class BrSensor(SensorEntity):
         try:
             self._attr_native_value = data.get(FORECAST)[fcday].get(WINDSPEED[:-3])
         except IndexError:
-            _LOGGER.warning("No forecast for fcday=%s", fcday)
+            _LOGGER.warning(warning_message, fcday)
             return False
 
         if self.state is not None:
@@ -863,7 +865,7 @@ class BrSensor(SensorEntity):
         try:
             self._attr_native_value = data.get(FORECAST)[fcday].get(sensor_type[:-3])
         except IndexError:
-            _LOGGER.warning("No forecast for fcday=%s", fcday)
+            _LOGGER.warning(warning_message, fcday)
             return False
         return True
 
@@ -881,7 +883,9 @@ class BrSensor(SensorEntity):
     def _update_precipitation_forecast(self, data, sensor_type):
         nested = data.get(PRECIPITATION_FORECAST)
         self._timeframe = nested.get(TIMEFRAME)
-        self._attr_native_value = nested.get(sensor_type[len(PRECIPITATION_FORECAST) + 1:])
+        self._attr_native_value = nested.get(
+            sensor_type[len(PRECIPITATION_FORECAST) + 1 :]
+        )
         return True
 
     def _update_wind_sensors(self, data, sensor_type):
@@ -911,4 +915,3 @@ class BrSensor(SensorEntity):
             result[MEASURED_LABEL] = local_dt.strftime("%c")
 
         self._attr_extra_state_attributes = result
-

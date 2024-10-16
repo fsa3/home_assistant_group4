@@ -1417,69 +1417,78 @@ class AlexaModeController(AlexaCapability):
         if name != "mode":
             raise UnsupportedProperty(name)
 
-        # Fan Direction
-        if self.instance == f"{fan.DOMAIN}.{fan.ATTR_DIRECTION}":
-            mode = self.entity.attributes.get(fan.ATTR_DIRECTION, None)
-            if mode in (fan.DIRECTION_FORWARD, fan.DIRECTION_REVERSE, STATE_UNKNOWN):
-                return f"{fan.ATTR_DIRECTION}.{mode}"
-
-        # Fan preset_mode
-        if self.instance == f"{fan.DOMAIN}.{fan.ATTR_PRESET_MODE}":
-            mode = self.entity.attributes.get(fan.ATTR_PRESET_MODE, None)
-            if mode in self.entity.attributes.get(fan.ATTR_PRESET_MODES, None):
-                return f"{fan.ATTR_PRESET_MODE}.{mode}"
-
-        # Humidifier mode
-        if self.instance == f"{humidifier.DOMAIN}.{humidifier.ATTR_MODE}":
-            mode = self.entity.attributes.get(humidifier.ATTR_MODE)
-            modes: list[str] = (
-                self.entity.attributes.get(humidifier.ATTR_AVAILABLE_MODES) or []
-            )
-            if mode in modes:
-                return f"{humidifier.ATTR_MODE}.{mode}"
-
-        # Remote Activity
+        # Mapping of domains to their attributes and valid modes
+        property_map = {
+            fan.DOMAIN: {
+                "modes": {
+                    fan.ATTR_DIRECTION: (
+                        fan.DIRECTION_FORWARD,
+                        fan.DIRECTION_REVERSE,
+                        STATE_UNKNOWN,
+                    ),
+                    fan.ATTR_PRESET_MODE: self.entity.attributes.get(
+                        fan.ATTR_PRESET_MODES, []
+                    ),
+                }
+            },
+            humidifier.DOMAIN: {
+                "modes": {
+                    humidifier.ATTR_MODE: self.entity.attributes.get(
+                        humidifier.ATTR_AVAILABLE_MODES, []
+                    )
+                }
+            },
+            remote.DOMAIN: {
+                "modes": {
+                    remote.ATTR_CURRENT_ACTIVITY: self.entity.attributes.get(
+                        remote.ATTR_ACTIVITY_LIST, []
+                    )
+                }
+            },
+            water_heater.DOMAIN: {
+                "modes": {
+                    water_heater.ATTR_OPERATION_MODE: self.entity.attributes.get(
+                        water_heater.ATTR_OPERATION_LIST, []
+                    )
+                }
+            },
+            cover.DOMAIN: {
+                "modes": {
+                    "state": (
+                        cover.STATE_OPEN,
+                        cover.STATE_OPENING,
+                        cover.STATE_CLOSED,
+                        cover.STATE_CLOSING,
+                        STATE_UNKNOWN,
+                    )
+                }
+            },
+            valve.DOMAIN: {
+                "modes": {
+                    "state": (
+                        valve.STATE_OPEN,
+                        valve.STATE_OPENING,
+                        valve.STATE_CLOSED,
+                        valve.STATE_CLOSING,
+                        STATE_UNKNOWN,
+                    )
+                }
+            },
+        }
         if self.instance == f"{remote.DOMAIN}.{remote.ATTR_ACTIVITY}":
             activity = self.entity.attributes.get(remote.ATTR_CURRENT_ACTIVITY, None)
             if activity in self.entity.attributes.get(remote.ATTR_ACTIVITY_LIST, []):
                 return f"{remote.ATTR_ACTIVITY}.{activity}"
 
-        # Water heater operation mode
-        if self.instance == f"{water_heater.DOMAIN}.{water_heater.ATTR_OPERATION_MODE}":
-            operation_mode = self.entity.attributes.get(
-                water_heater.ATTR_OPERATION_MODE
-            )
-            operation_modes: list[str] = (
-                self.entity.attributes.get(water_heater.ATTR_OPERATION_LIST) or []
-            )
-            if operation_mode in operation_modes:
-                return f"{water_heater.ATTR_OPERATION_MODE}.{operation_mode}"
-
-        # Cover Position
-        if self.instance == f"{cover.DOMAIN}.{cover.ATTR_POSITION}":
-            # Return state instead of position when using ModeController.
-            mode = self.entity.state
-            if mode in (
-                cover.STATE_OPEN,
-                cover.STATE_OPENING,
-                cover.STATE_CLOSED,
-                cover.STATE_CLOSING,
-                STATE_UNKNOWN,
-            ):
-                return f"{cover.ATTR_POSITION}.{mode}"
-
-        # Valve position state
-        if self.instance == f"{valve.DOMAIN}.state":
-            # Return state instead of position when using ModeController.
-            state = self.entity.state
-            if state in (
-                valve.STATE_OPEN,
-                valve.STATE_OPENING,
-                valve.STATE_CLOSED,
-                valve.STATE_CLOSING,
-                STATE_UNKNOWN,
-            ):
-                return f"state.{state}"
+        # Check against the property map
+        for domain, props in property_map.items():
+            for attr, modes in props["modes"].items():
+                if self.instance is not None and self.instance.startswith(
+                    f"{domain}.{attr}"
+                ):
+                    mode = self.entity.attributes.get(attr, self.entity.state)
+                    if mode in modes:
+                        return f"{attr}.{mode}"
 
         return None
 
@@ -1761,46 +1770,58 @@ class AlexaRangeController(AlexaCapability):
         if self.entity.state in (STATE_UNAVAILABLE, STATE_UNKNOWN, None):
             return None
 
-        # Cover Position
+        # Use helper methods to get properties
         if self.instance == f"{cover.DOMAIN}.{cover.ATTR_POSITION}":
-            return self.entity.attributes.get(cover.ATTR_CURRENT_POSITION)
+            return self.get_cover_position()
 
-        # Cover Tilt
         if self.instance == f"{cover.DOMAIN}.tilt":
-            return self.entity.attributes.get(cover.ATTR_CURRENT_TILT_POSITION)
+            return self.get_cover_tilt()
 
-        # Fan speed percentage
         if self.instance == f"{fan.DOMAIN}.{fan.ATTR_PERCENTAGE}":
-            supported = self.entity.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
-            if supported and fan.FanEntityFeature.SET_SPEED:
-                return self.entity.attributes.get(fan.ATTR_PERCENTAGE)
-            return 100 if self.entity.state == fan.STATE_ON else 0
+            return self.get_fan_speed_percentage()
 
-        # Humidifier target humidity
         if self.instance == f"{humidifier.DOMAIN}.{humidifier.ATTR_HUMIDITY}":
-            # If the humidifier is turned off the target humidity attribute is not set.
-            # We return 0 to make clear we do not know the current value.
-            return self.entity.attributes.get(humidifier.ATTR_HUMIDITY, 0)
+            return self.get_humidifier_humidity()
 
-        # Input Number Value
         if self.instance == f"{input_number.DOMAIN}.{input_number.ATTR_VALUE}":
             return float(self.entity.state)
 
-        # Number Value
         if self.instance == f"{number.DOMAIN}.{number.ATTR_VALUE}":
             return float(self.entity.state)
 
-        # Vacuum Fan Speed
         if self.instance == f"{vacuum.DOMAIN}.{vacuum.ATTR_FAN_SPEED}":
-            speed_list = self.entity.attributes.get(vacuum.ATTR_FAN_SPEED_LIST)
-            speed = self.entity.attributes.get(vacuum.ATTR_FAN_SPEED)
-            if speed_list is not None and speed is not None:
-                return next((i for i, v in enumerate(speed_list) if v == speed), None)
+            return self.get_vacuum_fan_speed()
 
-        # Valve Position
         if self.instance == f"{valve.DOMAIN}.{valve.ATTR_POSITION}":
             return self.entity.attributes.get(valve.ATTR_CURRENT_POSITION)
 
+        return None
+
+    def get_cover_position(self) -> int | None:
+        """Get the current position of the cover."""
+        return self.entity.attributes.get(cover.ATTR_CURRENT_POSITION)
+
+    def get_cover_tilt(self) -> int | None:
+        """Get the current tilt position of the cover."""
+        return self.entity.attributes.get(cover.ATTR_CURRENT_TILT_POSITION)
+
+    def get_fan_speed_percentage(self) -> int | None:
+        """Get the fan speed percentage."""
+        supported = self.entity.attributes.get(ATTR_SUPPORTED_FEATURES, 0)
+        if supported and fan.FanEntityFeature.SET_SPEED:
+            return self.entity.attributes.get(fan.ATTR_PERCENTAGE)
+        return 100 if self.entity.state == fan.STATE_ON else 0
+
+    def get_humidifier_humidity(self) -> Any:
+        """Get the target humidity of the humidifier."""
+        return self.entity.attributes.get(humidifier.ATTR_HUMIDITY, 0)
+
+    def get_vacuum_fan_speed(self) -> int | None:
+        """Get the vacuum's fan speed."""
+        speed_list = self.entity.attributes.get(vacuum.ATTR_FAN_SPEED_LIST)
+        speed = self.entity.attributes.get(vacuum.ATTR_FAN_SPEED)
+        if speed_list is not None and speed is not None:
+            return next((i for i, v in enumerate(speed_list) if v == speed), None)
         return None
 
     def configuration(self) -> dict[str, Any] | None:
