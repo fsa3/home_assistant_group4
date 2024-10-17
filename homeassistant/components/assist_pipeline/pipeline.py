@@ -554,7 +554,7 @@ class PipelineRun:
     start_stage: PipelineStage
     end_stage: PipelineStage
     event_callback: PipelineEventCallback
-    language: str = None  # type: ignore[assignment]
+    language: str | None = None
     runner_data: Any | None = None
     intent_agent: str | None = None
     tts_audio_output: str | dict[str, Any] | None = None
@@ -866,7 +866,7 @@ class PipelineRun:
                 message=f"No speech-to-text provider for: {engine}",
             )
 
-        metadata.language = self.pipeline.stt_language or self.language
+        metadata.language = str(getattr(self.pipeline, "stt_language", self.language))
 
         if not stt_provider.check_metadata(metadata):
             raise SpeechToTextError(
@@ -887,9 +887,11 @@ class PipelineRun:
         """Run speech-to-text portion of pipeline. Returns the spoken text."""
         # Create a background task to prepare the conversation agent
         if self.end_stage >= PipelineStage.INTENT:
+            language_to_use = self.language or "en-US"
+
             self.hass.async_create_background_task(
                 conversation.async_prepare_agent(
-                    self.hass, self.intent_agent, self.language
+                    self.hass, self.intent_agent, language_to_use
                 ),
                 f"prepare conversation agent {self.intent_agent}",
             )
