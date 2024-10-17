@@ -1633,9 +1633,14 @@ def _handle_cover_position2(
     position = min(100, max(0, range_delta + current))
     data[cover.ATTR_POSITION] = position
 
-    return SERVICE_SET_COVER_POSITION if position not in (0, 100) else (
-        cover.SERVICE_OPEN_COVER if position == 100 else cover.SERVICE_CLOSE_COVER
-    ), position
+    if position == 100:
+        service = cover.SERVICE_OPEN_COVER
+    elif position == 0:
+        service = cover.SERVICE_CLOSE_COVER
+    else:
+        service = SERVICE_SET_COVER_POSITION
+
+    return service, position
 
 
 def _handle_cover_tilt(
@@ -1654,11 +1659,14 @@ def _handle_cover_tilt(
     tilt_position = min(100, max(0, range_delta + current))
     data[cover.ATTR_TILT_POSITION] = tilt_position
 
-    return SERVICE_SET_COVER_TILT_POSITION if tilt_position not in (0, 100) else (
-        cover.SERVICE_OPEN_COVER_TILT
-        if tilt_position == 100
-        else cover.SERVICE_CLOSE_COVER_TILT
-    ), tilt_position
+    if tilt_position == 100:
+        service = cover.SERVICE_OPEN_COVER_TILT
+    elif tilt_position == 0:
+        service = cover.SERVICE_CLOSE_COVER_TILT
+    else:
+        service = SERVICE_SET_COVER_TILT_POSITION
+
+    return service, tilt_position
 
 
 def _handle_fan_speed(
@@ -1777,9 +1785,14 @@ def _handle_valve_position2(
     position = min(100, max(0, range_delta + current))
     data[valve.ATTR_POSITION] = position
 
-    return valve.SERVICE_SET_VALVE_POSITION if position not in (0, 100) else (
-        valve.SERVICE_OPEN_VALVE if position == 100 else valve.SERVICE_CLOSE_VALVE
-    ), position
+    if position == 100:
+        service = valve.SERVICE_OPEN_VALVE
+    elif position == 0:
+        service = valve.SERVICE_CLOSE_VALVE
+    else:
+        service = valve.SERVICE_SET_VALVE_POSITION
+
+    return service, position
 
 
 @HANDLERS.register(("Alexa.ChannelController", "ChangeChannel"))
