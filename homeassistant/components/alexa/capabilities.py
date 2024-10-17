@@ -1172,14 +1172,7 @@ class AlexaThermostatController(AlexaCapability):
         unit = self.hass.config.units.temperature_unit
         temp: Any = None
 
-        if name == "targetSetpoint":
-            temp = self.entity.attributes.get(ATTR_TEMPERATURE)
-        elif name == "lowerSetpoint":
-            temp = self.entity.attributes.get(climate.ATTR_TARGET_TEMP_LOW)
-        elif name == "upperSetpoint":
-            temp = self.entity.attributes.get(climate.ATTR_TARGET_TEMP_HIGH)
-        else:
-            raise UnsupportedProperty(name)
+        temp = self._get_temperature_for_setpoint(name)
 
         if temp is None:
             return None
@@ -1193,6 +1186,17 @@ class AlexaThermostatController(AlexaCapability):
             return None
 
         return {"value": temp, "scale": API_TEMP_UNITS[unit]}
+
+    def _get_temperature_for_setpoint(self, name: str) -> Any:
+        if name == "targetSetpoint":
+            temp = self.entity.attributes.get(ATTR_TEMPERATURE)
+        elif name == "lowerSetpoint":
+            temp = self.entity.attributes.get(climate.ATTR_TARGET_TEMP_LOW)
+        elif name == "upperSetpoint":
+            temp = self.entity.attributes.get(climate.ATTR_TARGET_TEMP_HIGH)
+        else:
+            raise UnsupportedProperty(name)
+        return temp
 
     def configuration(self) -> dict[str, Any] | None:
         """Return configuration object.
