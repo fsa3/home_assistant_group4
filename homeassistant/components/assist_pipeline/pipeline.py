@@ -773,17 +773,7 @@ class PipelineRun:
             wake_word_output: dict[str, Any] = {}
         else:
             # Avoid duplicate detections by checking cooldown
-            last_wake_up = self.hass.data[DATA_LAST_WAKE_UP].get(
-                result.wake_word_phrase
-            )
-            if last_wake_up is not None:
-                sec_since_last_wake_up = time.monotonic() - last_wake_up
-                if sec_since_last_wake_up < WAKE_WORD_COOLDOWN:
-                    _LOGGER.debug(
-                        "Duplicate wake word detection occurred for %s",
-                        result.wake_word_phrase,
-                    )
-                    raise DuplicateWakeUpDetectedError(result.wake_word_phrase)
+            self._check_duplicate_wake_word(result)
 
             # Record last wake up time to block duplicate detections
             self.hass.data[DATA_LAST_WAKE_UP][result.wake_word_phrase] = (
@@ -817,6 +807,17 @@ class PipelineRun:
         )
 
         return result
+
+    def _check_duplicate_wake_word(self, result: wake_word.DetectionResult) -> None:
+        last_wake_up = self.hass.data[DATA_LAST_WAKE_UP].get(result.wake_word_phrase)
+        if last_wake_up is not None:
+            sec_since_last_wake_up = time.monotonic() - last_wake_up
+            if sec_since_last_wake_up < WAKE_WORD_COOLDOWN:
+                _LOGGER.debug(
+                    "Duplicate wake word detection occurred for %s",
+                    result.wake_word_phrase,
+                )
+                raise DuplicateWakeUpDetectedError(result.wake_word_phrase)
 
     async def _wake_word_audio_stream(
         self,
