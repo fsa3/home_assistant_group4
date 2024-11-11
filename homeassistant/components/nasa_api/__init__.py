@@ -8,6 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import CONF_API_KEY, DEFAULT_API_KEY, DOMAIN, LOGGER
+from .coordinator import NasaDataUpdateCoordinator
 from .nasa_api_client import NasaApiClient
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
@@ -29,8 +30,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         api_key=entry.data.get(CONF_API_KEY, DEFAULT_API_KEY), session=session
     )
 
-    # Store api client in hass data
-    hass.data[DOMAIN][entry.entry_id] = api_client
+    nasa_coordinator = NasaDataUpdateCoordinator(hass, api_client)
+    await nasa_coordinator.async_config_entry_first_refresh()
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = nasa_coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
