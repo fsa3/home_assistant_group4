@@ -7,7 +7,7 @@ from typing import Any
 
 
 @dataclass(slots=True)
-class Neo:
+class NeoWsAsteroid:
     """Represents a near-Earth object (asteroid)."""
 
     id: str
@@ -21,7 +21,7 @@ class Neo:
     sentry_data_url: str | None
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Neo:
+    def from_dict(cls, data: dict[str, Any]) -> NeoWsAsteroid:
         """Initialize from a dictionary."""
         close_approach_data = [
             CloseApproachData.from_dict(approach)
