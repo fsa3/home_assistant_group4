@@ -5,9 +5,10 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-# from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from .const import DOMAIN, LOGGER
+from .const import CONF_API_KEY, DEFAULT_API_KEY, DOMAIN, LOGGER
+from .nasa_api_client import NasaApiClient
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 
@@ -23,8 +24,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         LOGGER.warning("NASA API integration already set up, setup aborted")
         return False
 
-    # session = async_get_clientsession(hass)
-    api_client = None  # replace with NasaApiClient
+    session = async_get_clientsession(hass)
+    api_client = NasaApiClient(
+        api_key=entry.data.get(CONF_API_KEY, DEFAULT_API_KEY), session=session
+    )
 
     # Store api client in hass data
     hass.data[DOMAIN][entry.entry_id] = api_client
