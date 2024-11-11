@@ -4016,6 +4016,12 @@
       "config_flow": true,
       "iot_class": "local_push"
     },
+    "nasa_api": {
+      "name": "NASA API",
+      "integration_type": "hub",
+      "config_flow": true,
+      "iot_class": "cloud_polling"
+    },
     "neato": {
       "name": "Neato Botvac",
       "integration_type": "hub",

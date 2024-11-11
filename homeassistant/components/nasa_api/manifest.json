@@ -1,0 +1,13 @@
+{
+  "domain": "nasa_api",
+  "name": "NASA API",
+  "codeowners": ["@fsa3"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://www.home-assistant.io/integrations/nasa_api",
+  "homekit": {},
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "ssdp": [],
+  "zeroconf": []
+}
