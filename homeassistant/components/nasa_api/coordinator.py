@@ -25,14 +25,28 @@ class NasaDataUpdateCoordinator(DataUpdateCoordinator[list[NeoWsAsteroid]]):
             update_interval=timedelta(seconds=10),  # 10 sec
         )
         self.api_client = client
-        self.cache: dict[str, NeoWsAsteroid] = {}
+        self.cache: dict[str, list[NeoWsAsteroid]] = {}
 
     async def _async_update_neows_data(self) -> list[NeoWsAsteroid]:
         """Fetch data from Neo API."""
         try:
-            return await self.api_client.fetch_neos_data()
+            neows_data = await self.api_client.fetch_neos_data()
+            if neows_data:
+                self.cache["neows"] = neows_data
+                return neows_data
         except Exception as err:
-            raise UpdateFailed(f"Error fetching data: {err}") from err
+            _LOGGER.warning(
+                "Failed to fetch NEOWS data, using cached data. Error: %s", err
+            )
+            if "neows" in self.cache:
+                return self.cache["neows"]
+            raise UpdateFailed(
+                f"No cached data available and failed to fetch new data. Error: {err}"
+            ) from err
+        _LOGGER.warning(
+            "Returning empty data as fallback due to missing fetch and cache"
+        )
+        return []
 
     async def _async_update_data(self) -> list[NeoWsAsteroid]:
         """Override method in HomeAssistants DataUpdateCoordinator to make data available to sensors."""

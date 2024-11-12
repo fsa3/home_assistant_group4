@@ -46,6 +46,7 @@ class NasaNeoCountSensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorEnt
         """Initialize the NEO count sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{DOMAIN}_neo_count"
+        self._attr_name = "Number of Near-Earth Objects"
 
     @property
     def native_value(self) -> StateType:
