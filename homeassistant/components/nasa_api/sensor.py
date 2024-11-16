@@ -52,4 +52,6 @@ class NasaNeoCountSensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorEnt
     def native_value(self) -> StateType:
         """Return the current count of near-Earth objects for today."""
         # Get the count directly from the coordinator's data
+        if not isinstance(self.coordinator.data, list):
+            return 0
         return len(self.coordinator.data) if self.coordinator.data else 0
