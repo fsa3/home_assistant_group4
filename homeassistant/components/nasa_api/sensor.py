@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
@@ -14,6 +14,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import NasaDataUpdateCoordinator
+from .models import NeoWsAsteroid
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,24 +71,22 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
     @property
     def native_value(self) -> StateType:
         """Return the value for each specific statistic."""
-        if not self.coordinator.data:
+        neows_data: list[NeoWsAsteroid] = cast(
+            list[NeoWsAsteroid], self.coordinator.data.get("neows", [])
+        )
+        if not neows_data:
             return None
 
         if self.entity_description.key == "total_neo_count":
-            return len(self.coordinator.data)
+            return len(neows_data)
         if self.entity_description.key == "hazardous_count":
             return sum(
-                1
-                for asteroid in self.coordinator.data
-                if asteroid.is_potentially_hazardous
+                1 for asteroid in neows_data if asteroid.is_potentially_hazardous
             )
         if self.entity_description.key == "largest_diameter_km":
             return round(
                 max(
-                    (
-                        asteroid.estimated_diameter.max_km
-                        for asteroid in self.coordinator.data
-                    ),
+                    (asteroid.estimated_diameter.max_km for asteroid in neows_data),
                     default=0,
                 ),
                 2,
@@ -95,10 +94,7 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
         if self.entity_description.key == "smallest_diameter_km":
             return round(
                 min(
-                    (
-                        asteroid.estimated_diameter.min_km
-                        for asteroid in self.coordinator.data
-                    ),
+                    (asteroid.estimated_diameter.min_km for asteroid in neows_data),
                     default=0,
                 ),
                 2,
@@ -108,9 +104,9 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 sum(
                     asteroid.estimated_diameter.max_km
                     + asteroid.estimated_diameter.min_km
-                    for asteroid in self.coordinator.data
+                    for asteroid in neows_data
                 )
-                / (2 * len(self.coordinator.data)),
+                / (2 * len(neows_data)),
                 2,
             )
         if self.entity_description.key == "closest_approach_km":
@@ -118,7 +114,7 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 min(
                     (
                         approach.miss_distance_km
-                        for asteroid in self.coordinator.data
+                        for asteroid in neows_data
                         for approach in asteroid.close_approach_data
                     ),
                     default=0,
@@ -130,7 +126,7 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 max(
                     (
                         approach.miss_distance_km
-                        for asteroid in self.coordinator.data
+                        for asteroid in neows_data
                         for approach in asteroid.close_approach_data
                     ),
                     default=0,
@@ -142,7 +138,7 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 max(
                     (
                         approach.relative_velocity_kph
-                        for asteroid in self.coordinator.data
+                        for asteroid in neows_data
                         for approach in asteroid.close_approach_data
                     ),
                     default=0,
@@ -154,7 +150,7 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 min(
                     (
                         approach.relative_velocity_kph
-                        for asteroid in self.coordinator.data
+                        for asteroid in neows_data
                         for approach in asteroid.close_approach_data
                     ),
                     default=0,
@@ -166,7 +162,10 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return detailed information for all asteroids as attributes."""
-        if not self.coordinator.data:
+        neows_data: list[NeoWsAsteroid] = cast(
+            list[NeoWsAsteroid], self.coordinator.data.get("neows", [])
+        )
+        if not neows_data:
             return {}
 
         return {
@@ -191,5 +190,5 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 if asteroid.close_approach_data
                 else None,
             }
-            for asteroid in self.coordinator.data
+            for asteroid in neows_data
         }
