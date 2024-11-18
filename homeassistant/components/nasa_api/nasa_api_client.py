@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 import json
 
-from aiohttp import ClientResponseError, ClientSession
+from aiohttp import ClientError, ClientResponseError, ClientSession
 
 from .const import DEFAULT_API_KEY, LOGGER
 from .models import ApodImage, NeoWsAsteroid
@@ -20,6 +20,30 @@ class NasaApiClient:
         """Initialize the client with API key and session."""
         self.api_key = api_key or DEFAULT_API_KEY
         self.session = session
+
+    async def validate_api_key(self) -> bool:
+        """Validate the API key by making a simple request to the APOD endpoint."""
+        params = {
+            "api_key": self.api_key,
+        }
+
+        try:
+            async with self.session.get(
+                API_URL + "planetary/apod", params=params
+            ) as response:
+                response.raise_for_status()
+                # Key valid if the request is successful
+                return True
+        except ClientResponseError as e:
+            if e.status in (403, 401):
+                LOGGER.error("Invalid API key: %s", e)
+            else:
+                LOGGER.error("HTTP error during API key validation: %s", e)
+        except (TimeoutError, ClientError) as e:
+            LOGGER.error("Unexpected error during API key validation: %s", e)
+
+        # return False (invalid key)
+        return False
 
     async def fetch_neos_data(self) -> list[NeoWsAsteroid]:
         """Fetch NEO data for the current day and log the response data."""
@@ -45,9 +69,12 @@ class NasaApiClient:
             LOGGER.error("HTTP error fetching NEO data: %s", e)
         except json.JSONDecodeError as e:
             LOGGER.error("JSON parsing error fetching NEO data: %s", e)
-        except Exception as e:  # This will catch any other unexpected exceptions
+        except (
+            TimeoutError,
+            ClientError,
+        ) as e:
             LOGGER.error("Unexpected error fetching NEO data: %s", e)
-            raise  # Re-raise the exception to propagate the error
+            raise
         return []
 
     async def fetch_apod_data(self) -> ApodImage:
