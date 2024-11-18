@@ -5,12 +5,12 @@ from __future__ import annotations
 from datetime import datetime
 import json
 
-from aiohttp import ClientResponseError, ClientSession
+from aiohttp import ClientError, ClientResponseError, ClientSession
 
 from .const import DEFAULT_API_KEY, LOGGER
-from .models import NeoWsAsteroid
+from .models import ApodImage, NeoWsAsteroid
 
-API_URL = "https://api.nasa.gov/neo/rest/v1/feed"
+API_URL = "https://api.nasa.gov/"
 
 
 class NasaApiClient:
@@ -20,6 +20,30 @@ class NasaApiClient:
         """Initialize the client with API key and session."""
         self.api_key = api_key or DEFAULT_API_KEY
         self.session = session
+
+    async def validate_api_key(self) -> bool:
+        """Validate the API key by making a simple request to the APOD endpoint."""
+        params = {
+            "api_key": self.api_key,
+        }
+
+        try:
+            async with self.session.get(
+                API_URL + "planetary/apod", params=params
+            ) as response:
+                response.raise_for_status()
+                # Key valid if the request is successful
+                return True
+        except ClientResponseError as e:
+            if e.status in (403, 401):
+                LOGGER.error("Invalid API key: %s", e)
+            else:
+                LOGGER.error("HTTP error during API key validation: %s", e)
+        except (TimeoutError, ClientError) as e:
+            LOGGER.error("Unexpected error during API key validation: %s", e)
+
+        # return False (invalid key)
+        return False
 
     async def fetch_neos_data(self) -> list[NeoWsAsteroid]:
         """Fetch NEO data for the current day and log the response data."""
@@ -32,7 +56,9 @@ class NasaApiClient:
         }
 
         try:
-            async with self.session.get(API_URL, params=params) as response:
+            async with self.session.get(
+                API_URL + "neo/rest/v1/feed", params=params
+            ) as response:
                 response.raise_for_status()  # Raise exception for HTTP errors
                 data = await response.json()  # Parse JSON response
                 # Extract asteroids from the data
@@ -43,7 +69,33 @@ class NasaApiClient:
             LOGGER.error("HTTP error fetching NEO data: %s", e)
         except json.JSONDecodeError as e:
             LOGGER.error("JSON parsing error fetching NEO data: %s", e)
-        except Exception as e:  # This will catch any other unexpected exceptions
+        except (
+            TimeoutError,
+            ClientError,
+        ) as e:
             LOGGER.error("Unexpected error fetching NEO data: %s", e)
-            raise  # Re-raise the exception to propagate the error
+            raise
         return []
+
+    async def fetch_apod_data(self) -> ApodImage:
+        """Fetch Astronomy Picture of the Day (APOD) data."""
+        params = {
+            "api_key": self.api_key,
+        }
+
+        try:
+            async with self.session.get(
+                API_URL + "/planetary/apod", params=params
+            ) as response:
+                response.raise_for_status()
+                data = await response.json()
+                return ApodImage.from_dict(data)
+        except ClientResponseError as e:
+            LOGGER.error("HTTP error fetching APOD data: %s", e)
+            raise
+        except json.JSONDecodeError as e:
+            LOGGER.error("JSON parsing error fetching APOD data: %s", e)
+            raise
+        except Exception as e:
+            LOGGER.error("Unexpected error fetching APOD data: %s", e)
+            raise
