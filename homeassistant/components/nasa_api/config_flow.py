@@ -10,8 +10,10 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_API_KEY
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import DEFAULT_API_KEY, DOMAIN
+from .nasa_api_client import NasaApiClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,17 +35,26 @@ class NASAConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             api_key = user_input.get(CONF_API_KEY, DEFAULT_API_KEY)
-            # session = async_get_clientsession(self.hass)
+            session = async_get_clientsession(self.hass)
 
-            # validate the API key here
             _LOGGER.debug("NASA API key: %s", api_key)
 
-            self.data = user_input
+            api_client = NasaApiClient(api_key, session)
 
-            return self.async_create_entry(
-                title="NASA API",
-                data={CONF_API_KEY: api_key},
-            )
+            api_key_valid = await api_client.validate_api_key()
+
+            if not api_key_valid:
+                errors["base"] = "invalid_auth"
+                _LOGGER.error("Invalid NASA API key provided by user")
+            else:
+                _LOGGER.debug("Valid NASA API key: %s", api_key)
+                self.data = user_input
+
+                # Create the config entry if the API key is valid
+                return self.async_create_entry(
+                    title="NASA API",
+                    data={CONF_API_KEY: api_key},
+                )
 
         data_schema = vol.Schema(
             {
