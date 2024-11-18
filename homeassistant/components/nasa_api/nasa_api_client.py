@@ -85,7 +85,7 @@ class NasaApiClient:
 
         try:
             async with self.session.get(
-                API_URL + "/planetary/apod", params=params
+                API_URL + "planetary/apod", params=params
             ) as response:
                 response.raise_for_status()
                 data = await response.json()
