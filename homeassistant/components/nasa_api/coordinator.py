@@ -22,7 +22,7 @@ class NasaDataUpdateCoordinator(DataUpdateCoordinator[list[NeoWsAsteroid]]):
             hass,
             _LOGGER,
             name=DOMAIN + "_NEO_COORDINATOR",
-            update_interval=timedelta(seconds=10),  # 10 sec
+            update_interval=timedelta(minutes=10),  # 10 min
         )
         self.api_client = client
         self.cache: dict[str, list[NeoWsAsteroid]] = {}
