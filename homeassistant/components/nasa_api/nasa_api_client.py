@@ -8,9 +8,9 @@ import json
 from aiohttp import ClientResponseError, ClientSession
 
 from .const import DEFAULT_API_KEY, LOGGER
-from .models import NeoWsAsteroid
+from .models import ApodImage, NeoWsAsteroid
 
-API_URL = "https://api.nasa.gov/neo/rest/v1/feed"
+API_URL = "https://api.nasa.gov/"
 
 
 class NasaApiClient:
@@ -32,7 +32,9 @@ class NasaApiClient:
         }
 
         try:
-            async with self.session.get(API_URL, params=params) as response:
+            async with self.session.get(
+                API_URL + "neo/rest/v1/feed", params=params
+            ) as response:
                 response.raise_for_status()  # Raise exception for HTTP errors
                 data = await response.json()  # Parse JSON response
                 # Extract asteroids from the data
@@ -47,3 +49,26 @@ class NasaApiClient:
             LOGGER.error("Unexpected error fetching NEO data: %s", e)
             raise  # Re-raise the exception to propagate the error
         return []
+
+    async def fetch_apod_data(self) -> ApodImage:
+        """Fetch Astronomy Picture of the Day (APOD) data."""
+        params = {
+            "api_key": self.api_key,
+        }
+
+        try:
+            async with self.session.get(
+                API_URL + "/planetary/apod", params=params
+            ) as response:
+                response.raise_for_status()
+                data = await response.json()
+                return ApodImage.from_dict(data)
+        except ClientResponseError as e:
+            LOGGER.error("HTTP error fetching APOD data: %s", e)
+            raise
+        except json.JSONDecodeError as e:
+            LOGGER.error("JSON parsing error fetching APOD data: %s", e)
+            raise
+        except Exception as e:
+            LOGGER.error("Unexpected error fetching APOD data: %s", e)
+            raise

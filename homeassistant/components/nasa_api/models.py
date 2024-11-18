@@ -105,3 +105,30 @@ class CloseApproachData:
             miss_distance_miles=float(data["miss_distance"]["miles"]),
             orbiting_body=data["orbiting_body"],
         )
+
+
+@dataclass(slots=True)
+class ApodImage:
+    """Represents Astronomy Picture of the Day (APOD) data."""
+
+    date: str
+    explanation: str
+    hdurl: str
+    media_type: str
+    title: str
+    url: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ApodImage:
+        """Initialize from a dictionary."""
+        try:
+            return cls(
+                date=data["date"],
+                explanation=data["explanation"],
+                hdurl=data.get("hdurl", ""),
+                media_type=data["media_type"],
+                title=data["title"],
+                url=data["url"],
+            )
+        except KeyError as err:
+            raise ValueError(f"Missing required field in APOD data: {err}") from err
