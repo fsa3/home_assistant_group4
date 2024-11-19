@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import cast
+from typing import Any, cast
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
@@ -170,3 +170,37 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 2,
             )
         return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return detailed information for all asteroids as attributes."""
+        neows_data: list[NeoWsAsteroid] = cast(
+            list[NeoWsAsteroid], self.coordinator.data.get("neows", [])
+        )
+        if not neows_data:
+            return {}
+
+        return {
+            asteroid.name: {
+                "id": asteroid.id,
+                "magnitude": round(asteroid.absolute_magnitude_h, 2),
+                "diameter_km": round(asteroid.estimated_diameter.max_km, 2),
+                "hazardous": "Yes" if asteroid.is_potentially_hazardous else "No",
+                "close_approach_date": asteroid.close_approach_data[
+                    0
+                ].close_approach_date
+                if asteroid.close_approach_data
+                else None,
+                "miss_distance_km": round(
+                    asteroid.close_approach_data[0].miss_distance_km, 2
+                )
+                if asteroid.close_approach_data
+                else None,
+                "relative_velocity_kph": round(
+                    asteroid.close_approach_data[0].relative_velocity_kph, 2
+                )
+                if asteroid.close_approach_data
+                else None,
+            }
+            for asteroid in neows_data
+        }
