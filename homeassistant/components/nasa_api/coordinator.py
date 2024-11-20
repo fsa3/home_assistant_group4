@@ -7,7 +7,7 @@ from typing import cast
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN
+from .const import DATA_SOURCE_APOD, DATA_SOURCE_NEOWS, DOMAIN
 from .models import ApodImage, NeoWsAsteroid
 from .nasa_api_client import NasaApiClient
 
@@ -19,15 +19,18 @@ class NasaDataUpdateCoordinator(
 ):
     """Class to manage the NEO data fetching from the API."""
 
-    def __init__(self, hass: HomeAssistant, client: NasaApiClient) -> None:
+    def __init__(
+        self, hass: HomeAssistant, client: NasaApiClient, sources: list[str]
+    ) -> None:
         """Initialize the NASA data update coordinator."""
         super().__init__(
             hass,
             _LOGGER,
-            name=DOMAIN + "_NEO_COORDINATOR",
+            name=DOMAIN + "_coordinator",
             update_interval=timedelta(minutes=10),  # 10 min
         )
         self.api_client = client
+        self.sources = sources
         self.cache: dict[str, list[NeoWsAsteroid] | ApodImage] = {}
 
     async def _async_update_neows_data(self) -> list[NeoWsAsteroid]:
@@ -35,14 +38,14 @@ class NasaDataUpdateCoordinator(
         try:
             neows_data = await self.api_client.fetch_neos_data()
             if neows_data:
-                self.cache["neows"] = neows_data
+                self.cache[DATA_SOURCE_NEOWS] = neows_data
                 return neows_data
         except Exception as err:
             _LOGGER.warning(
                 "Failed to fetch NEOWS data, using cached data. Error: %s", err
             )
-            if "neows" in self.cache:
-                return cast(list[NeoWsAsteroid], self.cache["neows"])
+            if DATA_SOURCE_NEOWS in self.cache:
+                return cast(list[NeoWsAsteroid], self.cache[DATA_SOURCE_NEOWS])
             raise UpdateFailed(
                 f"No cached data available and failed to fetch new data. Error: {err}"
             ) from err
@@ -56,14 +59,14 @@ class NasaDataUpdateCoordinator(
         try:
             apod_data = await self.api_client.fetch_apod_data()
             if apod_data:
-                self.cache["apod"] = apod_data
+                self.cache[DATA_SOURCE_APOD] = apod_data
                 return apod_data
         except Exception as err:
             _LOGGER.warning(
                 "Failed to fetch APOD data, using cached data. Error: %s", err
             )
-            if "apod" in self.cache:
-                return cast(ApodImage, self.cache["apod"])
+            if DATA_SOURCE_APOD in self.cache:
+                return cast(ApodImage, self.cache[DATA_SOURCE_APOD])
             raise UpdateFailed(
                 f"No cached APOD data available and failed to fetch new data. Error: {err}"
             ) from err
@@ -78,10 +81,12 @@ class NasaDataUpdateCoordinator(
 
     async def _async_update_data(self) -> dict[str, list[NeoWsAsteroid] | ApodImage]:
         """Override method in HomeAssistants DataUpdateCoordinator to make data available to sensors."""
-        neows_data = await self._async_update_neows_data()
-        apod_data = await self._async_update_apod_data()
+        data: dict[str, list[NeoWsAsteroid] | ApodImage] = {}
 
-        return {
-            "neows": neows_data,
-            "apod": apod_data,
-        }
+        if DATA_SOURCE_NEOWS in self.sources:
+            data[DATA_SOURCE_NEOWS] = await self._async_update_neows_data()
+
+        if DATA_SOURCE_APOD in self.sources:
+            data[DATA_SOURCE_APOD] = await self._async_update_apod_data()
+
+        return data

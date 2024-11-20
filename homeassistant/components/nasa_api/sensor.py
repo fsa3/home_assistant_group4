@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import CONF_DATA_SOURCES, DATA_SOURCE_NEOWS, DOMAIN
 from .coordinator import NasaDataUpdateCoordinator
 from .models import NeoWsAsteroid
 
@@ -52,6 +52,10 @@ async def async_setup_entry(
     """Set up the summary sensor."""
     coordinator: NasaDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
+    if DATA_SOURCE_NEOWS not in entry.data.get(CONF_DATA_SOURCES, []):
+        _LOGGER.debug("NEOWS data source not enabled, skipping summary sensor setup")
+        return
+
     # Create sensors for each summary statistic
     summary_sensors = [
         NasaNeoSummarySensor(coordinator, desc) for desc in SUMMARY_SENSOR_DESCRIPTIONS
@@ -84,7 +88,7 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
     def native_value(self) -> StateType:
         """Return the value for each specific statistic."""
         neows_data: list[NeoWsAsteroid] = cast(
-            list[NeoWsAsteroid], self.coordinator.data.get("neows", [])
+            list[NeoWsAsteroid], self.coordinator.data.get(DATA_SOURCE_NEOWS, [])
         )
         if not neows_data:
             return None
@@ -175,7 +179,7 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return detailed information for all asteroids as attributes."""
         neows_data: list[NeoWsAsteroid] = cast(
-            list[NeoWsAsteroid], self.coordinator.data.get("neows", [])
+            list[NeoWsAsteroid], self.coordinator.data.get(DATA_SOURCE_NEOWS, [])
         )
         if not neows_data:
             return {}

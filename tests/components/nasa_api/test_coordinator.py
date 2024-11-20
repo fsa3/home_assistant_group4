@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from homeassistant.components.nasa_api.const import DATA_SOURCE_NEOWS, DATA_SOURCES
 from homeassistant.components.nasa_api.coordinator import NasaDataUpdateCoordinator
 from homeassistant.components.nasa_api.models import NeoWsAsteroid
 from homeassistant.helpers.update_coordinator import UpdateFailed
@@ -17,7 +18,7 @@ class TestNasaDataUpdateCoordinator(unittest.TestCase):  # noqa: D101
         self.hass = AsyncMock()  # Mock HomeAssistant instance
         self.api_client = AsyncMock()  # Mock NASA API client
         self.coordinator = NasaDataUpdateCoordinator(
-            hass=self.hass, client=self.api_client
+            hass=self.hass, client=self.api_client, sources=DATA_SOURCES
         )
 
     @patch(
@@ -38,13 +39,13 @@ class TestNasaDataUpdateCoordinator(unittest.TestCase):  # noqa: D101
         result = await self.coordinator._async_update_neows_data()
 
         assert result == mock_data
-        assert self.coordinator.cache["neows"] == mock_data
+        assert self.coordinator.cache[DATA_SOURCE_NEOWS] == mock_data
 
     async def test_data_fetch_with_api_failure_and_cache(self):
         """Test that the coordinator uses cached data if the API call fails."""
         # Set up the cache with mock data
         cached_data = [NeoWsAsteroid(id="54321", name="CachedAsteroid", size="300")]
-        self.coordinator.cache["neows"] = cached_data
+        self.coordinator.cache[DATA_SOURCE_NEOWS] = cached_data
 
         self.api_client.fetch_neos_data.side_effect = Exception("API failure")
 

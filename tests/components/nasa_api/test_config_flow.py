@@ -5,7 +5,11 @@ from unittest.mock import patch
 import pytest
 
 from homeassistant import config_entries
-from homeassistant.components.nasa_api.const import DOMAIN
+from homeassistant.components.nasa_api.const import (
+    CONF_DATA_SOURCES,
+    DATA_SOURCES,
+    DOMAIN,
+)
 from homeassistant.const import CONF_API_KEY
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -22,6 +26,7 @@ async def test_form_success(hass: HomeAssistant) -> None:
     assert result["type"] == FlowResultType.FORM
     assert result["errors"] == {}
 
+    # Simulate successful API key validation
     with patch(
         "homeassistant.components.nasa_api.nasa_api_client.NasaApiClient.validate_api_key",
         return_value=True,
@@ -31,9 +36,22 @@ async def test_form_success(hass: HomeAssistant) -> None:
         )
         await hass.async_block_till_done()
 
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "data_sources"
+
+    # Simulate data source selection and create the entry
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_DATA_SOURCES: DATA_SOURCES}
+    )
+    await hass.async_block_till_done()
+
+    # Assert that the entry is successfully created
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["title"] == "NASA API"
-    assert result["data"] == {CONF_API_KEY: MOCK_API_KEY}
+    assert result["data"] == {
+        CONF_API_KEY: MOCK_API_KEY,
+        CONF_DATA_SOURCES: DATA_SOURCES,
+    }
 
 
 async def test_form_invalid_auth(hass: HomeAssistant) -> None:
