@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from aiohttp import ClientError
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
@@ -41,20 +42,30 @@ class NASAConfigFlow(ConfigFlow, domain=DOMAIN):
 
             api_client = NasaApiClient(api_key, session)
 
-            api_key_valid = await api_client.validate_api_key()
-
-            if not api_key_valid:
-                errors["base"] = "invalid_auth"
-                _LOGGER.error("Invalid NASA API key provided by user")
+            try:
+                api_key_valid = await api_client.validate_api_key()
+            except (ClientError, TimeoutError) as e:
+                _LOGGER.error("Network error during API key validation: %s", e)
+                errors["base"] = "cannot_connect"
+            except ValueError as e:
+                _LOGGER.error("Value error during API key validation: %s", e)
+                errors["base"] = "invalid_response"
+            except Exception as e:
+                _LOGGER.error("Unexpected error during API key validation: %s", e)
+                raise
             else:
-                _LOGGER.debug("Valid NASA API key: %s", api_key)
-                self.data = user_input
+                if not api_key_valid:
+                    errors["base"] = "invalid_auth"
+                    _LOGGER.error("Invalid NASA API key provided by user")
+                else:
+                    _LOGGER.debug("Valid NASA API key: %s", api_key)
+                    self.data = user_input
 
-                # Create the config entry if the API key is valid
-                return self.async_create_entry(
-                    title="NASA API",
-                    data={CONF_API_KEY: api_key},
-                )
+                    # Create the config entry if the API key is valid
+                    return self.async_create_entry(
+                        title="NASA API",
+                        data={CONF_API_KEY: api_key},
+                    )
 
         data_schema = vol.Schema(
             {
