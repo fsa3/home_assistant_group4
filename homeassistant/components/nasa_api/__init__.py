@@ -11,7 +11,7 @@ from .const import CONF_API_KEY, DEFAULT_API_KEY, DOMAIN, LOGGER
 from .coordinator import NasaDataUpdateCoordinator
 from .nasa_api_client import NasaApiClient
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.IMAGE, Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
