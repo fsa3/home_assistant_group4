@@ -104,3 +104,16 @@ def test_available(mock_coordinator) -> None:
 
 
 # 5 Test extra state Attributes
+def test_extra_state_attributes(mock_coordinator) -> None:
+    """Test the extra_state_attributes property of the NasaApodImageEntity."""
+    entity = NasaApodImageEntity(mock_coordinator, MagicMock())
+
+    # Case 1: Valid data
+    attributes = entity.extra_state_attributes
+    assert attributes["title"] == "Mock Image Title"
+    assert attributes["description"] == "Mock description of the APOD image."
+
+    # Case 2: Missing data
+    mock_coordinator.data[DATA_SOURCE_APOD] = None
+    attributes = entity.extra_state_attributes
+    assert attributes == {}, "Empty dictionary is expected for missing data"
