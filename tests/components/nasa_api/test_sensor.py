@@ -67,7 +67,7 @@ def mock_coordinator() -> None:
                 NeoWsAsteroid(
                     id="1",
                     name="Asteroid 1",
-                    nasa_jpl_url="http://example.com/asteroid1",
+                    nasa_jpl_url="https://example.com/asteroid1",
                     absolute_magnitude_h=22.5,
                     estimated_diameter=EstimatedDiameter(
                         min_km=0.5,
@@ -101,7 +101,7 @@ def mock_coordinator() -> None:
                 NeoWsAsteroid(
                     id="2",
                     name="Asteroid 2",
-                    nasa_jpl_url="http://example.com/asteroid2",
+                    nasa_jpl_url="https://example.com/asteroid2",
                     absolute_magnitude_h=23.2,
                     estimated_diameter=EstimatedDiameter(
                         min_km=0.2,
@@ -130,7 +130,7 @@ def mock_coordinator() -> None:
                         )
                     ],
                     is_sentry_object=True,
-                    sentry_data_url="http://example.com/sentry2",
+                    sentry_data_url="https://example.com/sentry2",
                 ),
             ]
         }

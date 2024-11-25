@@ -15,7 +15,7 @@ class TestNeoWsAsteroid(unittest.TestCase):
         data = {
             "id": "12345",
             "name": "TestAsteroid",
-            "nasa_jpl_url": "http://example.com",
+            "nasa_jpl_url": "https://example.com",
             "absolute_magnitude_h": 22.5,
             "estimated_diameter": {
                 "kilometers": {
