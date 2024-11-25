@@ -36,7 +36,7 @@ async def test_fetch_neos_data_http_error() -> None:
     """Test that the client handles HTTP errors gracefully."""
 
     # Mock `ClientResponseError`
-    request_info = RequestInfo(url=URL("http://example.com"), method="GET", headers={})
+    request_info = RequestInfo(url=URL("https://example.com"), method="GET", headers={})
     error = ClientResponseError(
         request_info=request_info,
         history=(),
