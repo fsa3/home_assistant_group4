@@ -24,11 +24,11 @@ def mock_coordinator() -> MagicMock:
         data={
             DATA_SOURCE_APOD: ApodImage(
                 date="2024-01-01",
-                url="http://example.com/mock-image-standard.jpg",
+                url="https://example.com/mock-image-standard.jpg",
                 title="Mock Image Title",
                 explanation="Mock description of the APOD image.",
                 media_type="image",
-                hdurl="http://example.com/mock-image-hd.jpg",
+                hdurl="https://example.com/mock-image-hd.jpg",
             )
         }
     )
@@ -67,7 +67,7 @@ def test_image_url(mock_coordinator) -> None:
 
     # Case 1: Valid image data
     assert (
-        entity.image_url == "http://example.com/mock-image-hd.jpg"
+        entity.image_url == "https://example.com/mock-image-hd.jpg"
     ), "Expected hdurl for valid image data"
 
     # Case 2: Invalid media type
