@@ -1,5 +1,6 @@
 """Unit tests for the models used in the NASA API integration."""
 
+import math
 import unittest
 
 import pytest
@@ -64,14 +65,14 @@ class TestNeoWsAsteroid(unittest.TestCase):
         assert asteroid.is_potentially_hazardous is True
 
         # Verify estimated diameter
-        assert asteroid.estimated_diameter.min_km == 0.1
-        assert asteroid.estimated_diameter.max_km == 0.5
+        assert math.isclose(asteroid.estimated_diameter.min_km, 0.1, rel_tol=1e-9)
+        assert math.isclose(asteroid.estimated_diameter.max_km, 0.5, rel_tol=1e-9)
 
         # Verify close approach data
         assert len(asteroid.close_approach_data) == 1
         close_approach = asteroid.close_approach_data[0]
         assert close_approach.close_approach_date == "2024-11-13"
-        assert close_approach.relative_velocity_kps == 10.0
+        assert math.isclose(close_approach.relative_velocity_kps, 10.0, rel_tol=1e-9)
 
     def test_missing_fields(self):
         """Test NeoWsAsteroid initialization with missing fields raises KeyError or similar."""

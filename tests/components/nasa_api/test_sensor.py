@@ -1,5 +1,6 @@
 """Unittests for sensor.py in components/nasa_api."""
 
+import math
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -190,8 +191,10 @@ def test_extra_state_attributes(mock_coordinator) -> None:
     # Verify details for Asteroid 1
     asteroid_1_attrs = attributes["Asteroid 1"]
     assert asteroid_1_attrs["id"] == "1"
-    assert asteroid_1_attrs["magnitude"] == 22.5
-    assert asteroid_1_attrs["diameter_km"] == 1.5  # Largest diameter
+    assert math.isclose(asteroid_1_attrs["magnitude"], 22.5, rel_tol=1e-9)
+    assert math.isclose(
+        asteroid_1_attrs["diameter_km"], 1.5, rel_tol=1e-9
+    )  # Largest diameter
     assert asteroid_1_attrs["hazardous"] == "Yes"
     assert asteroid_1_attrs["close_approach_date"] == "2024-01-01"
     assert asteroid_1_attrs["miss_distance_km"] == 35000
@@ -200,8 +203,10 @@ def test_extra_state_attributes(mock_coordinator) -> None:
     # Verify details for Asteroid 2
     asteroid_2_attrs = attributes["Asteroid 2"]
     assert asteroid_2_attrs["id"] == "2"
-    assert asteroid_2_attrs["magnitude"] == 23.2
-    assert asteroid_2_attrs["diameter_km"] == 0.6  # Largest diameter
+    assert math.isclose(asteroid_2_attrs["magnitude"], 23.2, rel_tol=1e-9)
+    assert math.isclose(
+        asteroid_2_attrs["diameter_km"], 0.6, rel_tol=1e-9
+    )  # Largest diameter
     assert asteroid_2_attrs["hazardous"] == "No"
     assert asteroid_2_attrs["close_approach_date"] == "2024-02-01"
     assert asteroid_2_attrs["miss_distance_km"] == 500000
