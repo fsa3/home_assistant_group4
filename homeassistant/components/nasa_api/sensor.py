@@ -121,6 +121,8 @@ async def async_setup_entry(
 class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorEntity):
     """Sensor entity for each NEO summary statistic."""
 
+    _attr_has_entity_name = True
+
     def __init__(
         self,
         coordinator: NasaDataUpdateCoordinator,
