@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 import logging
 from typing import Any, cast
 
@@ -238,17 +239,18 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
         if not neows_data:
             return {}
 
-        return {
-            asteroid.name: {
+        asteroids = [
+            {
                 "id": asteroid.id,
-                "magnitude": round(asteroid.absolute_magnitude_h, 2),
-                "diameter_km": round(asteroid.estimated_diameter.max_km, 2),
+                "name": asteroid.name,
+                "url": asteroid.nasa_jpl_url,
+                "diameter_m": round(asteroid.estimated_diameter.max_meters, 2),
                 "hazardous": "Yes" if asteroid.is_potentially_hazardous else "No",
                 "close_approach_date": asteroid.close_approach_data[
                     0
-                ].close_approach_date
+                ].close_approach_date_full
                 if asteroid.close_approach_data
-                else None,
+                else "",
                 "miss_distance_km": round(
                     asteroid.close_approach_data[0].miss_distance_km, 2
                 )
@@ -261,4 +263,23 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 else None,
             }
             for asteroid in neows_data
+        ]
+
+        # Sort asteroids by close_approach_date
+        asteroids.sort(
+            key=lambda x: datetime.strptime(x["close_approach_date"], "%Y-%b-%d %H:%M")
+            if isinstance(x["close_approach_date"], str) and x["close_approach_date"]
+            else datetime.max
+        )
+
+        if self.entity_description.key == "hazardous_count":
+            hazardous_asteroids = [
+                asteroid for asteroid in asteroids if asteroid["hazardous"] == "Yes"
+            ]
+            return {
+                "asteroids": hazardous_asteroids,
+            }
+
+        return {
+            "asteroids": asteroids,
         }
