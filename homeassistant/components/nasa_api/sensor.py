@@ -43,15 +43,15 @@ SUMMARY_SENSOR_DESCRIPTIONS = [
     ),
     SensorEntityDescription(
         key="largest_diameter_meter",
-        name="Largest NEO Diameter (km)",
+        name="Largest NEO Diameter",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DISTANCE,
         native_unit_of_measurement=UnitOfLength.METERS,
         entity_registry_enabled_default=True,
     ),
     SensorEntityDescription(
-        key="smallest_diameter_km",
-        name="Smallest NEO Diameter (km)",
+        key="smallest_diameter_meter",
+        name="Smallest NEO Diameter",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DISTANCE,
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
@@ -67,7 +67,7 @@ SUMMARY_SENSOR_DESCRIPTIONS = [
     ),
     SensorEntityDescription(
         key="closest_approach_km",
-        name="Closest Approach Distance (km)",
+        name="Closest Approach Distance",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DISTANCE,
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
@@ -75,7 +75,7 @@ SUMMARY_SENSOR_DESCRIPTIONS = [
     ),
     SensorEntityDescription(
         key="farthest_approach_km",
-        name="Farthest Approach Distance (km)",
+        name="Farthest Approach Distance",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DISTANCE,
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
@@ -83,7 +83,7 @@ SUMMARY_SENSOR_DESCRIPTIONS = [
     ),
     SensorEntityDescription(
         key="fastest_velocity_kph",
-        name="Fastest Velocity (km/h)",
+        name="Fastest Velocity",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.SPEED,
         native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
@@ -91,7 +91,7 @@ SUMMARY_SENSOR_DESCRIPTIONS = [
     ),
     SensorEntityDescription(
         key="slowest_velocity_kph",
-        name="Slowest Velocity (km/h)",
+        name="Slowest Velocity",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.SPEED,
         native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
@@ -161,10 +161,10 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 ),
                 2,
             )
-        if self.entity_description.key == "smallest_diameter_km":
+        if self.entity_description.key == "smallest_diameter_meter":
             return round(
                 min(
-                    (asteroid.estimated_diameter.min_km for asteroid in neows_data),
+                    (asteroid.estimated_diameter.min_meters for asteroid in neows_data),
                     default=0,
                 ),
                 2,

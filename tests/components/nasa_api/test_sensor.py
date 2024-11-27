@@ -144,9 +144,9 @@ def test_native_value(mock_coordinator) -> None:
     expected_values = {
         "total_neo_count": 2,  # Two asteroids in mock data
         "hazardous_count": 1,  # One hazardous asteroid
-        "largest_diameter_km": 1.5,  # Asteroid 1 has the largest max diameter
-        "smallest_diameter_km": 0.2,  # Asteroid 2 has the smallest min diameter
-        "average_diameter_km": 0.7,  # (1.5+0.5 + 0.6+0.2) / (2*2)
+        "largest_diameter_meter": 1500,  # Asteroid 1 has the largest max diameter
+        "smallest_diameter_meter": 200,  # Asteroid 2 has the smallest min diameter
+        "average_diameter_meter": 700,  # (1.5+0.5 + 0.6+0.2) / (2*2)
         "closest_approach_km": 35000,  # Closest approach is Asteroid 1
         "farthest_approach_km": 500000,  # Farthest approach is Asteroid 2
         "fastest_velocity_kph": 25000,  # Asteroid 1 is faster
