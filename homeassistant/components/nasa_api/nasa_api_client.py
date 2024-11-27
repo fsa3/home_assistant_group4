@@ -21,10 +21,10 @@ class NasaApiClient:
         self.api_key = api_key or DEFAULT_API_KEY
         self.session = session
 
-    async def validate_api_key(self) -> bool:
+    async def validate_api_key(self, api_key) -> bool:
         """Validate the API key by making a simple request to the APOD endpoint."""
         params = {
-            "api_key": self.api_key,
+            "api_key": api_key,
         }
 
         try:
