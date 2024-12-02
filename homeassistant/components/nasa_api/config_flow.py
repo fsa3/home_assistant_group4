@@ -49,7 +49,7 @@ class NASAConfigFlow(ConfigFlow, domain=DOMAIN):
             api_client = NasaApiClient(api_key, session)
 
             try:
-                api_key_valid = await api_client.validate_api_key()
+                api_key_valid = await api_client.validate_api_key(api_key)
             except (ClientError, TimeoutError) as e:
                 _LOGGER.error("Network error during API key validation: %s", e)
                 errors["base"] = "cannot_connect"

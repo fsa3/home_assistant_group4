@@ -58,11 +58,17 @@ class NasaDataUpdateCoordinator(
 
     async def _async_update_apod_data(self) -> ApodImage:
         """Fetch data from the APOD API."""
+        apod_data = ApodImage(
+            url="",
+            title="",
+            explanation="No data available",
+            date="",
+            hdurl="",
+            media_type="",
+        )
+
         try:
             apod_data = await self.api_client.fetch_apod_data()
-            if apod_data:
-                self.cache[DATA_SOURCE_APOD] = apod_data
-                return apod_data
         except Exception as err:
             _LOGGER.warning(
                 "Failed to fetch APOD data, using cached data. Error: %s", err
@@ -72,14 +78,22 @@ class NasaDataUpdateCoordinator(
             raise UpdateFailed(
                 f"No cached APOD data available and failed to fetch new data. Error: {err}"
             ) from err
-        return ApodImage(
-            url="",
-            title="",
-            explanation="No data available",
-            date="",
-            hdurl="",
-            media_type="",
-        )
+
+        if not apod_data or apod_data.media_type != "image":
+            _LOGGER.warning(
+                "APOD data is invalid or media type is not 'image', using cached data"
+            )
+            if DATA_SOURCE_APOD in self.cache:
+                return cast(ApodImage, self.cache[DATA_SOURCE_APOD])
+            raise UpdateFailed(
+                "Fetched APOD data is invalid and no cached data is available."
+            )
+
+        if apod_data:
+            self.cache[DATA_SOURCE_APOD] = apod_data
+            return apod_data
+
+        return apod_data
 
     async def _async_update_insight_data(self) -> list[MarsWeather]:
         """Fetch data from the InSight API."""

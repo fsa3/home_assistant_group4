@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 import logging
 from typing import Any, cast
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+    SensorStateClass,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_ATTRIBUTION
+from homeassistant.const import ATTR_ATTRIBUTION, UnitOfLength, UnitOfSpeed
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -24,25 +30,74 @@ ATTRIBUTION = "Data provided by NASA API"
 
 # Define descriptions for the NEO summary sensors
 SUMMARY_SENSOR_DESCRIPTIONS = [
-    SensorEntityDescription(key="total_neo_count", name="Total NEO Count"),
-    SensorEntityDescription(key="hazardous_count", name="Potentially Hazardous NEOs"),
     SensorEntityDescription(
-        key="largest_diameter_km", name="Largest NEO Diameter (km)"
+        key="total_neo_count",
+        name="Total NEO Count",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
     ),
     SensorEntityDescription(
-        key="smallest_diameter_km", name="Smallest NEO Diameter (km)"
+        key="hazardous_count",
+        name="Potentially Hazardous NEOs",
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
     ),
     SensorEntityDescription(
-        key="average_diameter_km", name="Average NEO Diameter (km)"
+        key="largest_diameter_meter",
+        name="Largest NEO Diameter",
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DISTANCE,
+        native_unit_of_measurement=UnitOfLength.METERS,
+        entity_registry_enabled_default=True,
     ),
     SensorEntityDescription(
-        key="closest_approach_km", name="Closest Approach Distance (km)"
+        key="smallest_diameter_meter",
+        name="Smallest NEO Diameter",
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DISTANCE,
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        entity_registry_enabled_default=True,
     ),
     SensorEntityDescription(
-        key="farthest_approach_km", name="Farthest Approach Distance (km)"
+        key="average_diameter_meter",
+        name="Average NEO Diameter",
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DISTANCE,
+        native_unit_of_measurement=UnitOfLength.METERS,
+        entity_registry_enabled_default=True,
     ),
-    SensorEntityDescription(key="fastest_velocity_kph", name="Fastest Velocity (km/h)"),
-    SensorEntityDescription(key="slowest_velocity_kph", name="Slowest Velocity (km/h)"),
+    SensorEntityDescription(
+        key="closest_approach_km",
+        name="Closest Approach Distance",
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DISTANCE,
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        entity_registry_enabled_default=True,
+    ),
+    SensorEntityDescription(
+        key="farthest_approach_km",
+        name="Farthest Approach Distance",
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DISTANCE,
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        entity_registry_enabled_default=True,
+    ),
+    SensorEntityDescription(
+        key="fastest_velocity_kph",
+        name="Fastest Velocity",
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.SPEED,
+        native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
+        entity_registry_enabled_default=True,
+    ),
+    SensorEntityDescription(
+        key="slowest_velocity_kph",
+        name="Slowest Velocity",
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.SPEED,
+        native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
+        entity_registry_enabled_default=True,
+    ),
 ]
 
 
@@ -65,6 +120,8 @@ async def async_setup_entry(
 
 class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorEntity):
     """Sensor entity for each NEO summary statistic."""
+
+    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -99,27 +156,27 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
             return sum(
                 1 for asteroid in neows_data if asteroid.is_potentially_hazardous
             )
-        if self.entity_description.key == "largest_diameter_km":
+        if self.entity_description.key == "largest_diameter_meter":
             return round(
                 max(
-                    (asteroid.estimated_diameter.max_km for asteroid in neows_data),
+                    (asteroid.estimated_diameter.max_meters for asteroid in neows_data),
                     default=0,
                 ),
                 2,
             )
-        if self.entity_description.key == "smallest_diameter_km":
+        if self.entity_description.key == "smallest_diameter_meter":
             return round(
                 min(
-                    (asteroid.estimated_diameter.min_km for asteroid in neows_data),
+                    (asteroid.estimated_diameter.min_meters for asteroid in neows_data),
                     default=0,
                 ),
                 2,
             )
-        if self.entity_description.key == "average_diameter_km":
+        if self.entity_description.key == "average_diameter_meter":
             return round(
                 sum(
-                    asteroid.estimated_diameter.max_km
-                    + asteroid.estimated_diameter.min_km
+                    asteroid.estimated_diameter.max_meters
+                    + asteroid.estimated_diameter.min_meters
                     for asteroid in neows_data
                 )
                 / (2 * len(neows_data)),
@@ -184,17 +241,18 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
         if not neows_data:
             return {}
 
-        return {
-            asteroid.name: {
+        asteroids = [
+            {
                 "id": asteroid.id,
-                "magnitude": round(asteroid.absolute_magnitude_h, 2),
-                "diameter_km": round(asteroid.estimated_diameter.max_km, 2),
+                "name": asteroid.name,
+                "url": asteroid.nasa_jpl_url,
+                "diameter_m": round(asteroid.estimated_diameter.max_meters, 2),
                 "hazardous": "Yes" if asteroid.is_potentially_hazardous else "No",
                 "close_approach_date": asteroid.close_approach_data[
                     0
-                ].close_approach_date
+                ].close_approach_date_full
                 if asteroid.close_approach_data
-                else None,
+                else "",
                 "miss_distance_km": round(
                     asteroid.close_approach_data[0].miss_distance_km, 2
                 )
@@ -207,4 +265,23 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 else None,
             }
             for asteroid in neows_data
+        ]
+
+        # Sort asteroids by close_approach_date
+        asteroids.sort(
+            key=lambda x: datetime.strptime(x["close_approach_date"], "%Y-%b-%d %H:%M")
+            if isinstance(x["close_approach_date"], str) and x["close_approach_date"]
+            else datetime.max
+        )
+
+        if self.entity_description.key == "hazardous_count":
+            hazardous_asteroids = [
+                asteroid for asteroid in asteroids if asteroid["hazardous"] == "Yes"
+            ]
+            return {
+                "asteroids": hazardous_asteroids,
+            }
+
+        return {
+            "asteroids": asteroids,
         }

@@ -10,7 +10,7 @@ from httpx import AsyncClient, HTTPStatusError, RequestError
 
 from homeassistant.components.image import ImageEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.httpx_client import get_async_client
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -104,6 +104,21 @@ class NasaApodImageEntity(CoordinatorEntity[NasaDataUpdateCoordinator], ImageEnt
         # Reset the image data and update timestamp to force refresh
         self._image_data = None
         self._attr_image_last_updated = datetime.now(UTC)
+        self.async_write_ha_state()  # Notify Home Assistant
+
+    async def async_added_to_hass(self) -> None:
+        """Call when the entity is added to Home Assistant."""
+        await super().async_added_to_hass()
+
+        @callback
+        def _schedule_async_update() -> None:
+            """Schedule async_update as a task."""
+            self.hass.async_create_task(self.async_update())
+
+        # Listen for coordinator updates and schedule async_update
+        self.async_on_remove(
+            self.coordinator.async_add_listener(_schedule_async_update)
+        )
 
     @property
     def extra_state_attributes(self) -> dict[str, str]:
