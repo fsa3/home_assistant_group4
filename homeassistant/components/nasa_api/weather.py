@@ -119,20 +119,20 @@ class MarsWeatherEntity(CoordinatorEntity, WeatherEntity):
         return None
 
     @property
-    def humidity(self) -> float | None:
-        """Return the humidity."""
-        if self._sol_data:
-            value = self._sol_data.humidity
-            LOGGER.debug(f"Humidity for Sol {self._sol_data.sol}: {value}")
-            return value
-        return None
-
-    @property
     def condition(self) -> str | None:
         """Return a human-readable representation of the weather condition."""
         if self._sol_data and self._sol_data.season:
-            return SEASON_DESCRIPTIONS.get(self._sol_data.season.lower(), "Unknown")
-        return "Unknown"
+            season = self._sol_data.season.lower()
+
+            # Map Mars seasons to Home Assistant weather conditions
+            if season in ("early winter", "mid winter"):
+                return "snowy"  # Maps to snowy condition
+            if season in ("early summer", "mid summer"):
+                return "sunny"
+            if season == "fall":
+                return "partlycloudy"
+            return "unknown"
+        return "unknown"
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
@@ -146,7 +146,6 @@ class MarsWeatherEntity(CoordinatorEntity, WeatherEntity):
             "temperature_max": self._sol_data.temperature_max,
             "pressure": self._sol_data.pressure,
             "season": self._sol_data.season,
-            "humidity": self._sol_data.humidity,
             "wind_speed": self._sol_data.wind_speed,
             "wind_bearing": self._sol_data.wind_bearing,
         }
