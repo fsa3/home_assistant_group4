@@ -11,7 +11,8 @@ from .const import CONF_API_KEY, CONF_DATA_SOURCES, DEFAULT_API_KEY, DOMAIN, LOG
 from .coordinator import NasaDataUpdateCoordinator
 from .nasa_api_client import NasaApiClient
 
-PLATFORMS: list[Platform] = [Platform.IMAGE, Platform.SENSOR]
+# Add the Weather platform to the list
+PLATFORMS: list[Platform] = [Platform.IMAGE, Platform.SENSOR, Platform.WEATHER]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -37,6 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await nasa_coordinator.async_config_entry_first_refresh()
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = nasa_coordinator
 
+    # Forward the entry setup to all specified platforms, including Weather
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     LOGGER.info("NASA API integration setup complete")
