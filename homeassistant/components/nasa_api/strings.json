@@ -2,10 +2,11 @@
   "config": {
     "step": {
       "user": {
+        "title": "Set up NASA API",
+        "description": "Provide your NASA API key and select the data sources to fetch.",
         "data": {
-          "host": "[%key:common::config_flow::data::host%]",
-          "username": "[%key:common::config_flow::data::username%]",
-          "password": "[%key:common::config_flow::data::password%]"
+          "api_key": "API Key",
+          "nasa_data_sources": "Select Data Sources"
         }
       }
     },
@@ -16,7 +17,7 @@
       "no_data_source_selection": "Select at least one data source"
     },
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+      "already_configured": "This NASA API instance is already configured."
     }
   }
 }

@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from .const import LOGGER
+
 
 @dataclass(slots=True)
 class NeoWsAsteroid:
@@ -132,3 +134,65 @@ class ApodImage:
             )
         except KeyError as err:
             raise ValueError(f"Missing required field in APOD data: {err}") from err
+
+
+@dataclass(slots=True)
+class MarsWeather:
+    """Represents Mars weather data for a single Sol (Martian day)."""
+
+    sol: str  # Sol number (Martian day)
+    temperature: float | None  # Average atmospheric temperature
+    temperature_min: float | None  # Minimum temperature
+    temperature_max: float | None  # Maximum temperature
+    pressure: float | None  # Average atmospheric pressure
+    wind_speed: float | None  # Average wind speed
+    wind_bearing: float | None  # Most common wind direction in degrees
+    season: str | None  # Martian season
+    first_utc: str | None  # Start UTC timestamp for this Sol
+    last_utc: str | None  # End UTC timestamp for this Sol
+    humidity: float | None  # New humidity attribute
+
+    @classmethod
+    def from_dict(cls, sol: str, data: dict[str, Any]) -> MarsWeather:
+        """Initialize MarsWeather from a dictionary."""
+        return cls(
+            sol=sol,
+            temperature=data.get("AT", {}).get("av"),
+            temperature_min=data.get("AT", {}).get("mn"),
+            temperature_max=data.get("AT", {}).get("mx"),
+            pressure=data.get("PRE", {}).get("av"),
+            wind_speed=data.get("HWS", {}).get("av"),
+            wind_bearing=data.get("WD", {})
+            .get("most_common", {})
+            .get("compass_degrees"),
+            season=data.get("Season"),
+            first_utc=data.get("First_UTC"),
+            last_utc=data.get("Last_UTC"),
+            humidity=data.get("HUM", {}).get(
+                "av", None
+            ),  # Extracting humidity if available
+        )
+
+
+def parse_mars_weather(data: dict[str, Any]) -> list[MarsWeather]:
+    """Parse raw Mars weather API data into a list of MarsWeather objects."""
+    sol_keys = data.get("sol_keys", [])
+    weather_data: list[MarsWeather] = []  # Add type annotation
+
+    # Log the entire raw API data for debugging
+    LOGGER.debug(f"Raw API Data: {data}")
+
+    if not sol_keys:
+        LOGGER.warning("No Sol keys found in API data")
+        return weather_data
+
+    for sol in sol_keys:
+        sol_data = data.get(sol, {})
+        if not sol_data:
+            LOGGER.warning(f"No data found for Sol {sol}")
+            continue
+
+        weather_data.append(MarsWeather.from_dict(sol, sol_data))
+        LOGGER.debug(f"Parsed Sol {sol}: {sol_data}")
+
+    return weather_data

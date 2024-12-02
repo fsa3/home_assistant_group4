@@ -7,17 +7,19 @@ from typing import cast
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DATA_SOURCE_APOD, DATA_SOURCE_NEOWS, DOMAIN
-from .models import ApodImage, NeoWsAsteroid
+from .const import DATA_SOURCE_APOD, DATA_SOURCE_INSIGHT, DATA_SOURCE_NEOWS, DOMAIN
+from .models import ApodImage, MarsWeather, NeoWsAsteroid
 from .nasa_api_client import NasaApiClient
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class NasaDataUpdateCoordinator(
-    DataUpdateCoordinator[dict[str, list[NeoWsAsteroid] | ApodImage]]
+    DataUpdateCoordinator[
+        dict[str, list[NeoWsAsteroid] | ApodImage | list[MarsWeather]]
+    ]
 ):
-    """Class to manage the NEO data fetching from the API."""
+    """Class to manage NASA data fetching from the API."""
 
     def __init__(
         self, hass: HomeAssistant, client: NasaApiClient, sources: list[str]
@@ -27,14 +29,14 @@ class NasaDataUpdateCoordinator(
             hass,
             _LOGGER,
             name=DOMAIN + "_coordinator",
-            update_interval=timedelta(minutes=10),  # 10 min
+            update_interval=timedelta(minutes=10),  # Default: 10 min
         )
         self.api_client = client
         self.sources = sources
-        self.cache: dict[str, list[NeoWsAsteroid] | ApodImage] = {}
+        self.cache: dict[str, list[NeoWsAsteroid] | ApodImage | list[MarsWeather]] = {}
 
     async def _async_update_neows_data(self) -> list[NeoWsAsteroid]:
-        """Fetch data from Neo API."""
+        """Fetch data from the NEOWS API."""
         try:
             neows_data = await self.api_client.fetch_neos_data()
             if neows_data:
@@ -47,7 +49,7 @@ class NasaDataUpdateCoordinator(
             if DATA_SOURCE_NEOWS in self.cache:
                 return cast(list[NeoWsAsteroid], self.cache[DATA_SOURCE_NEOWS])
             raise UpdateFailed(
-                f"No cached data available and failed to fetch new data. Error: {err}"
+                f"No cached NEOWS data available and failed to fetch new data. Error: {err}"
             ) from err
         _LOGGER.warning(
             "Returning empty data as fallback due to missing fetch and cache"
@@ -79,14 +81,40 @@ class NasaDataUpdateCoordinator(
             media_type="",
         )
 
-    async def _async_update_data(self) -> dict[str, list[NeoWsAsteroid] | ApodImage]:
-        """Override method in HomeAssistants DataUpdateCoordinator to make data available to sensors."""
-        data: dict[str, list[NeoWsAsteroid] | ApodImage] = {}
+    async def _async_update_insight_data(self) -> list[MarsWeather]:
+        """Fetch data from the InSight API."""
+        try:
+            insight_data = await self.api_client.fetch_mars_weather()
+            if insight_data:
+                self.cache[DATA_SOURCE_INSIGHT] = insight_data
+                return insight_data
+        except Exception as err:
+            _LOGGER.warning(
+                "Failed to fetch Mars weather data, using cached data. Error: %s", err
+            )
+            if DATA_SOURCE_INSIGHT in self.cache:
+                return cast(list[MarsWeather], self.cache[DATA_SOURCE_INSIGHT])
+            raise UpdateFailed(
+                f"No cached Mars weather data available and failed to fetch new data. Error: {err}"
+            ) from err
+        _LOGGER.warning(
+            "Returning empty Mars weather data as fallback due to missing fetch and cache"
+        )
+        return []
+
+    async def _async_update_data(
+        self,
+    ) -> dict[str, list[NeoWsAsteroid] | ApodImage | list[MarsWeather]]:
+        """Override method in Home Assistant's DataUpdateCoordinator to make data available to sensors."""
+        data: dict[str, list[NeoWsAsteroid] | ApodImage | list[MarsWeather]] = {}
 
         if DATA_SOURCE_NEOWS in self.sources:
             data[DATA_SOURCE_NEOWS] = await self._async_update_neows_data()
 
         if DATA_SOURCE_APOD in self.sources:
             data[DATA_SOURCE_APOD] = await self._async_update_apod_data()
+
+        if DATA_SOURCE_INSIGHT in self.sources:
+            data[DATA_SOURCE_INSIGHT] = await self._async_update_insight_data()
 
         return data
