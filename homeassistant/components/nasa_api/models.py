@@ -179,9 +179,6 @@ def parse_mars_weather(data: dict[str, Any]) -> list[MarsWeather]:
     sol_keys = data.get("sol_keys", [])
     weather_data: list[MarsWeather] = []  # Add type annotation
 
-    # Log the entire raw API data for debugging
-    LOGGER.debug(f"Raw API Data: {data}")
-
     if not sol_keys:
         LOGGER.warning("No Sol keys found in API data")
         return weather_data
@@ -193,6 +190,5 @@ def parse_mars_weather(data: dict[str, Any]) -> list[MarsWeather]:
             continue
 
         weather_data.append(MarsWeather.from_dict(sol, sol_data))
-        LOGGER.debug(f"Parsed Sol {sol}: {sol_data}")
 
     return weather_data

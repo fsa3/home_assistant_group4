@@ -67,16 +67,14 @@ async def test_async_setup_entry(hass: HomeAssistant, mock_coordinator) -> None:
     assert len(added_entities) == 1
     entity = added_entities[0]
     assert isinstance(entity, MarsWeatherEntity)
-    assert entity.name == "Mars Weather (Sol 1000)"
+    assert entity.name == "Mars Weather"
 
 
 # Test 2: Temperature Properties
 def test_temperature_properties(mock_coordinator) -> None:
     """Test the native_temperature property of the MarsWeatherEntity."""
     # Case 1: Valid temperature data
-    entity = MarsWeatherEntity(
-        mock_coordinator, mock_coordinator.data[DATA_SOURCE_INSIGHT][0]
-    )
+    entity = MarsWeatherEntity(mock_coordinator)
     assert entity.native_temperature == -60.0, "Expected temperature to match mock data"
 
 
@@ -84,9 +82,7 @@ def test_temperature_properties(mock_coordinator) -> None:
 def test_wind_properties(mock_coordinator) -> None:
     """Test wind_speed and wind_bearing properties."""
     # Case 1: Valid wind data
-    entity = MarsWeatherEntity(
-        mock_coordinator, mock_coordinator.data[DATA_SOURCE_INSIGHT][0]
-    )
+    entity = MarsWeatherEntity(mock_coordinator)
     assert entity.native_wind_speed == 5.2, "Expected wind speed to match mock data"
 
     # Case 2: Verify wind bearing in extra_state_attributes
@@ -99,8 +95,6 @@ def test_wind_properties(mock_coordinator) -> None:
 def test_entity_metadata(mock_coordinator) -> None:
     """Test entity name and unique_id properties of the MarsWeatherEntity."""
     # Case 1: Validate metadata
-    entity = MarsWeatherEntity(
-        mock_coordinator, mock_coordinator.data[DATA_SOURCE_INSIGHT][0]
-    )
-    assert entity.name == "Mars Weather (Sol 1000)"
-    assert entity.unique_id == f"{DOMAIN}_mars_weather_1000"
+    entity = MarsWeatherEntity(mock_coordinator)
+    assert entity.name == "Mars Weather"
+    assert entity.unique_id == f"{DOMAIN}_mars_weather"

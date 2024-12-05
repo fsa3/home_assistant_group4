@@ -7,7 +7,7 @@ import json
 
 from aiohttp import ClientError, ClientResponseError, ClientSession
 
-from .const import DEFAULT_API_KEY, INSIGHT_API_URL, INSIGHT_PARAMS, LOGGER
+from .const import DEFAULT_API_KEY, INSIGHT_PARAMS, LOGGER
 from .models import ApodImage, MarsWeather, NeoWsAsteroid, parse_mars_weather
 
 API_URL = "https://api.nasa.gov/"
@@ -105,10 +105,11 @@ class NasaApiClient:
         params = {"api_key": self.api_key, **INSIGHT_PARAMS}
 
         try:
-            async with self.session.get(INSIGHT_API_URL, params=params) as response:
-                response.raise_for_status()  # Raise exception for HTTP errors
-                data = await response.json()  # Parse JSON response
-                # Parse the API response into MarsWeather objects
+            async with self.session.get(
+                API_URL + "insight_weather/", params=params
+            ) as response:
+                response.raise_for_status()
+                data = await response.json()
                 mars_weather = parse_mars_weather(data)
                 LOGGER.debug("Successfully fetched and parsed Mars weather data")
                 return mars_weather

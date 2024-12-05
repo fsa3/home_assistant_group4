@@ -27,12 +27,4 @@ DATA_SOURCE_FRIENDLY_NAMES = {
 }
 
 # InSight Mars Weather API
-INSIGHT_API_URL = "https://api.nasa.gov/insight_weather/"
 INSIGHT_PARAMS = {"feedtype": "json", "ver": "1.0"}
-INSIGHT_UPDATE_INTERVAL = 3600  # 1 hour in seconds
-
-# Default values for Mars Weather
-MARS_WEATHER_NAME = "Mars Weather"
-UNIT_TEMPERATURE = "°C"
-UNIT_PRESSURE = "Pa"
-UNIT_WIND_SPEED = "m/s"
