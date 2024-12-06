@@ -60,7 +60,7 @@ async def test_async_setup_entry() -> None:
 
 
 @pytest.fixture
-def mock_coordinator() -> None:
+def mock_coordinator() -> MagicMock:
     """Create a mock coordinator with sample NEO data."""
     return MagicMock(
         data={
