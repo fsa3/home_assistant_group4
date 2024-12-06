@@ -116,9 +116,6 @@ class MarsWeatherEntity(CoordinatorEntity[NasaDataUpdateCoordinator], WeatherEnt
             "season": sol_data.season,
             "wind_speed": sol_data.wind_speed,
             "wind_bearing": sol_data.wind_bearing,
-            "first_utc": sol_data.first_utc,
-            "last_utc": sol_data.last_utc,
-            "humidity": sol_data.humidity,
         }
         LOGGER.debug(f"Extra state attributes for Sol {sol_data.sol}: {attrs}")
         return attrs
