@@ -1,5 +1,6 @@
 """Test file for weather.py in the NASA API components."""
 
+import math
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -83,11 +84,13 @@ def test_wind_properties(mock_coordinator) -> None:
     """Test wind_speed and wind_bearing properties."""
     # Case 1: Valid wind data
     entity = MarsWeatherEntity(mock_coordinator)
-    assert entity.native_wind_speed == 5.2, "Expected wind speed to match mock data"
+    assert math.isclose(
+        entity.native_wind_speed, 5.2, rel_tol=1e-9
+    ), "Expected wind speed to match mock data"
 
     # Case 2: Verify wind bearing in extra_state_attributes
-    assert (
-        entity.extra_state_attributes["wind_bearing"] == 270.0
+    assert math.isclose(
+        entity.extra_state_attributes["wind_bearing"], 270.0, rel_tol=1e-9
     ), "Expected wind bearing to match mock data"
 
 
