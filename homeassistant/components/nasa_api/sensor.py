@@ -55,7 +55,7 @@ SUMMARY_SENSOR_DESCRIPTIONS = [
         name="Smallest NEO Diameter",
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DISTANCE,
-        native_unit_of_measurement=UnitOfLength.KILOMETERS,
+        native_unit_of_measurement=UnitOfLength.METERS,
         entity_registry_enabled_default=True,
     ),
     SensorEntityDescription(
@@ -246,7 +246,8 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 "id": asteroid.id,
                 "name": asteroid.name,
                 "url": asteroid.nasa_jpl_url,
-                "diameter_m": round(asteroid.estimated_diameter.max_meters, 2),
+                "max_diameter_m": round(asteroid.estimated_diameter.max_meters, 2),
+                "min_diameter_m": round(asteroid.estimated_diameter.min_meters, 2),
                 "hazardous": "Yes" if asteroid.is_potentially_hazardous else "No",
                 "close_approach_date": asteroid.close_approach_data[
                     0
@@ -281,6 +282,66 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
             return {
                 "asteroids": hazardous_asteroids,
             }
+
+        if self.entity_description.key == "closest_approach_km":
+            closest_asteroid = min(
+                asteroids,
+                key=lambda x: float(x["miss_distance_km"])
+                if isinstance(x["miss_distance_km"], (int, float, str))
+                else float("inf"),
+                default=None,
+            )
+            return {"closest_asteroid": closest_asteroid} if closest_asteroid else {}
+
+        if self.entity_description.key == "farthest_approach_km":
+            farthest_asteroid = max(
+                asteroids,
+                key=lambda x: float(x["miss_distance_km"])
+                if isinstance(x["miss_distance_km"], (int, float, str))
+                else float("-inf"),
+                default=None,
+            )
+            return {"farthest_asteroid": farthest_asteroid} if farthest_asteroid else {}
+
+        if self.entity_description.key == "largest_diameter_meter":
+            largest_asteroid = max(
+                asteroids,
+                key=lambda x: float(x["max_diameter_m"])
+                if isinstance(x["max_diameter_m"], (int, float, str))
+                else float("-inf"),
+                default=None,
+            )
+            return {"largest_asteroid": largest_asteroid} if largest_asteroid else {}
+
+        if self.entity_description.key == "smallest_diameter_meter":
+            smallest_asteroid = min(
+                asteroids,
+                key=lambda x: float(x["min_diameter_m"])
+                if isinstance(x["min_diameter_m"], (int, float, str))
+                else float("inf"),
+                default=None,
+            )
+            return {"smallest_asteroid": smallest_asteroid} if smallest_asteroid else {}
+
+        if self.entity_description.key == "fastest_velocity_kph":
+            fastest_asteroid = max(
+                asteroids,
+                key=lambda x: float(x["relative_velocity_kph"])
+                if isinstance(x["relative_velocity_kph"], (int, float, str))
+                else float("-inf"),
+                default=None,
+            )
+            return {"fastest_asteroid": fastest_asteroid} if fastest_asteroid else {}
+
+        if self.entity_description.key == "slowest_velocity_kph":
+            slowest_asteroid = min(
+                asteroids,
+                key=lambda x: float(x["relative_velocity_kph"])
+                if isinstance(x["relative_velocity_kph"], (int, float, str))
+                else float("inf"),
+                default=None,
+            )
+            return {"slowest_asteroid": slowest_asteroid} if slowest_asteroid else {}
 
         return {
             "asteroids": asteroids,
