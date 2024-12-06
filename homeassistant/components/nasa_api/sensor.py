@@ -275,6 +275,8 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
             else datetime.max
         )
 
+        # Filter out and show only relevant asteroids for applicable sensors
+
         if self.entity_description.key == "hazardous_count":
             hazardous_asteroids = [
                 asteroid for asteroid in asteroids if asteroid["hazardous"] == "Yes"

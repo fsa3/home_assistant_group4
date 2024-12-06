@@ -37,7 +37,7 @@ class NASAConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle the initial step."""
+        """Handle the initial step to enter the API key."""
         errors: dict[str, str] = {}
 
         if user_input is not None:

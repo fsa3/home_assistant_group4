@@ -56,7 +56,7 @@ class NasaDataUpdateCoordinator(
         )
         return []
 
-    async def _async_update_apod_data(self) -> ApodImage:
+    async def _async_update_apod_data(self, random=False) -> ApodImage:
         """Fetch data from the APOD API."""
         apod_data = ApodImage(
             url="",
@@ -68,7 +68,7 @@ class NasaDataUpdateCoordinator(
         )
 
         try:
-            apod_data = await self.api_client.fetch_apod_data()
+            apod_data = await self.api_client.fetch_apod_data(random)
         except Exception as err:
             _LOGGER.warning(
                 "Failed to fetch APOD data, using cached data. Error: %s", err
@@ -85,6 +85,11 @@ class NasaDataUpdateCoordinator(
             )
             if DATA_SOURCE_APOD in self.cache:
                 return cast(ApodImage, self.cache[DATA_SOURCE_APOD])
+            if not random:
+                _LOGGER.warning(
+                    "Returning random APOD as fallback due to missing cache"
+                )
+                return await self._async_update_apod_data(random=True)
             raise UpdateFailed(
                 "Fetched APOD data is invalid and no cached data is available."
             )

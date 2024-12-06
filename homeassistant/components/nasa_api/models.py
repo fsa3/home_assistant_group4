@@ -150,7 +150,6 @@ class MarsWeather:
     season: str | None  # Martian season
     first_utc: str | None  # Start UTC timestamp for this Sol
     last_utc: str | None  # End UTC timestamp for this Sol
-    humidity: float | None  # New humidity attribute
 
     @classmethod
     def from_dict(cls, sol: str, data: dict[str, Any]) -> MarsWeather:
@@ -168,16 +167,13 @@ class MarsWeather:
             season=data.get("Season"),
             first_utc=data.get("First_UTC"),
             last_utc=data.get("Last_UTC"),
-            humidity=data.get("HUM", {}).get(
-                "av", None
-            ),  # Extracting humidity if available
         )
 
 
 def parse_mars_weather(data: dict[str, Any]) -> list[MarsWeather]:
     """Parse raw Mars weather API data into a list of MarsWeather objects."""
     sol_keys = data.get("sol_keys", [])
-    weather_data: list[MarsWeather] = []  # Add type annotation
+    weather_data: list[MarsWeather] = []
 
     if not sol_keys:
         LOGGER.warning("No Sol keys found in API data")

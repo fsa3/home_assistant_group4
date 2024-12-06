@@ -77,11 +77,14 @@ class NasaApiClient:
             raise
         return []
 
-    async def fetch_apod_data(self) -> ApodImage:
+    async def fetch_apod_data(self, random=False) -> ApodImage:
         """Fetch Astronomy Picture of the Day (APOD) data."""
         params = {
             "api_key": self.api_key,
         }
+
+        if random:
+            params["count"] = "1"
 
         try:
             async with self.session.get(
@@ -89,6 +92,9 @@ class NasaApiClient:
             ) as response:
                 response.raise_for_status()
                 data = await response.json()
+                # check if data is array and then return first element
+                if isinstance(data, list):
+                    data = data[0]
                 return ApodImage.from_dict(data)
         except ClientResponseError as e:
             LOGGER.error("HTTP error fetching APOD data: %s", e)
