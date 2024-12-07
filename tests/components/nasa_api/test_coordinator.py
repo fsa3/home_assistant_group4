@@ -6,9 +6,14 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from homeassistant.components.nasa_api.const import DATA_SOURCE_NEOWS, DATA_SOURCES
+from homeassistant.components.nasa_api.const import (
+    DATA_SOURCE_APOD,
+    DATA_SOURCE_INSIGHT,
+    DATA_SOURCE_NEOWS,
+    DATA_SOURCES,
+)
 from homeassistant.components.nasa_api.coordinator import NasaDataUpdateCoordinator
-from homeassistant.components.nasa_api.models import NeoWsAsteroid
+from homeassistant.components.nasa_api.models import ApodImage, NeoWsAsteroid
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 
@@ -59,6 +64,111 @@ class TestNasaDataUpdateCoordinator(unittest.TestCase):  # noqa: D101
 
         with pytest.raises(UpdateFailed):
             await self.coordinator._async_update_neows_data()
+
+    async def test_async_update_apod_data(self):
+        """Test _async_update_apod_data with valid data."""
+        # Mock valid APOD data
+        mock_apod_data = ApodImage(
+            url="https://example.com/image.jpg",
+            title="Test APOD Image",
+            explanation="This is a test explanation for APOD.",
+            date="2024-01-01",
+            hdurl="https://example.com/hd_image.jpg",
+            media_type="image",
+        )
+        self.api_client.fetch_apod_data.return_value = mock_apod_data
+
+        # Call the method
+        result = await self.coordinator._async_update_apod_data()
+
+        # Verify the result
+        assert result == mock_apod_data
+        assert self.coordinator.cache[DATA_SOURCE_APOD] == mock_apod_data
+
+        async def test_async_update_apod_data_invalid_media_type(self):
+            """Test _async_update_apod_data with invalid media type."""
+            # Mock invalid APOD data with a non-image media type
+            mock_apod_data = ApodImage(
+                url="https://example.com/video.mp4",
+                title="Test Video",
+                explanation="This is a test explanation for APOD.",
+                date="2024-01-01",
+                hdurl="https://example.com/video_hd.mp4",
+                media_type="video",
+            )
+            self.api_client.fetch_apod_data.return_value = mock_apod_data
+
+            # Call the method
+            with pytest.raises(UpdateFailed):
+                await self.coordinator._async_update_apod_data()
+
+        async def test_async_update_apod_data_cache_fallback(self):
+            """Test _async_update_apod_data falls back to cached data on API failure."""
+            # Populate cache with mock data
+            cached_apod_data = ApodImage(
+                url="https://example.com/cached_image.jpg",
+                title="Cached Image",
+                explanation="This is cached APOD data.",
+                date="2023-12-31",
+                hdurl="https://example.com/cached_hd_image.jpg",
+                media_type="image",
+            )
+            self.coordinator.cache[DATA_SOURCE_APOD] = cached_apod_data
+
+            # Simulate API failure
+            self.api_client.fetch_apod_data.side_effect = Exception("API failure")
+
+            # Call the method
+            result = await self.coordinator._async_update_apod_data()
+
+            # Verify that cached data is returned
+            assert result == cached_apod_data
+
+        async def test_async_update_insight_data(self):
+            """Test _async_update_insight_data with valid data."""
+            # Mock valid Mars weather data
+            mock_insight_data = [
+                {"sol": "1001", "temperature": "20C"},
+                {"sol": "1002", "temperature": "18C"},
+            ]
+            self.api_client.fetch_mars_weather.return_value = mock_insight_data
+
+            # Call the method
+            result = await self.coordinator._async_update_insight_data()
+
+            # Verify the result
+            assert result == mock_insight_data
+            assert self.coordinator.cache[DATA_SOURCE_INSIGHT] == mock_insight_data
+
+        async def test_async_update_insight_data_empty_data(self):
+            """Test _async_update_insight_data with empty data."""
+            # Mock empty Mars weather data
+            self.api_client.fetch_mars_weather.return_value = []
+
+            # Call the method
+            result = await self.coordinator._async_update_insight_data()
+
+            # Verify the result is empty
+            assert result == []
+            assert self.coordinator.cache.get(DATA_SOURCE_INSIGHT) == []
+
+        async def test_async_update_insight_data_cache_fallback(self):
+            """Test _async_update_insight_data falls back to cached data on API failure."""
+            # Populate cache with mock data
+            cached_insight_data = [
+                {"sol": "999", "temperature": "15C"},
+                {"sol": "1000", "temperature": "17C"},
+            ]
+            self.coordinator.cache[DATA_SOURCE_INSIGHT] = cached_insight_data
+
+            # Simulate API failure
+            self.api_client.fetch_mars_weather.side_effect = Exception("API failure")
+
+            # Call the method
+            result = await self.coordinator._async_update_insight_data()
+
+            # Verify that cached data is returned
+            assert result == cached_insight_data
 
 
 # Run tests
