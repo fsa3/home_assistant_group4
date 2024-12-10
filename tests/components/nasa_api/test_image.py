@@ -100,10 +100,7 @@ def test_available(mock_coordinator) -> None:
     assert entity.available is False, "Expected available to be False for missing data"
 
 
-# 4 Test Image Retrieval
-
-
-# 5 Test extra state Attributes
+# 4 Test extra state Attributes
 def test_extra_state_attributes(mock_coordinator) -> None:
     """Test the extra_state_attributes property of the NasaApodImageEntity."""
     entity = NasaApodImageEntity(mock_coordinator, MagicMock())
