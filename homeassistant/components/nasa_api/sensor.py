@@ -285,66 +285,74 @@ class NasaNeoSummarySensor(CoordinatorEntity[NasaDataUpdateCoordinator], SensorE
                 "asteroids": hazardous_asteroids,
             }
 
-        if self.entity_description.key == "closest_approach_km":
-            closest_asteroid = min(
-                asteroids,
-                key=lambda x: float(x["miss_distance_km"])
-                if isinstance(x["miss_distance_km"], (int, float, str))
-                else float("inf"),
-                default=None,
-            )
-            return {"closest_asteroid": closest_asteroid} if closest_asteroid else {}
+        attribute_key = self.entity_description.key
 
-        if self.entity_description.key == "farthest_approach_km":
-            farthest_asteroid = max(
-                asteroids,
-                key=lambda x: float(x["miss_distance_km"])
-                if isinstance(x["miss_distance_km"], (int, float, str))
-                else float("-inf"),
-                default=None,
+        if attribute_key == "closest_approach_km":
+            return self._find_extreme_asteroid(
+                asteroids, "miss_distance_km", "min", "closest_asteroid"
             )
-            return {"farthest_asteroid": farthest_asteroid} if farthest_asteroid else {}
 
-        if self.entity_description.key == "largest_diameter_meter":
-            largest_asteroid = max(
-                asteroids,
-                key=lambda x: float(x["max_diameter_m"])
-                if isinstance(x["max_diameter_m"], (int, float, str))
-                else float("-inf"),
-                default=None,
+        if attribute_key == "farthest_approach_km":
+            return self._find_extreme_asteroid(
+                asteroids, "miss_distance_km", "max", "farthest_asteroid"
             )
-            return {"largest_asteroid": largest_asteroid} if largest_asteroid else {}
 
-        if self.entity_description.key == "smallest_diameter_meter":
-            smallest_asteroid = min(
-                asteroids,
-                key=lambda x: float(x["min_diameter_m"])
-                if isinstance(x["min_diameter_m"], (int, float, str))
-                else float("inf"),
-                default=None,
+        if attribute_key == "largest_diameter_meter":
+            return self._find_extreme_asteroid(
+                asteroids, "max_diameter_m", "max", "largest_asteroid"
             )
-            return {"smallest_asteroid": smallest_asteroid} if smallest_asteroid else {}
 
-        if self.entity_description.key == "fastest_velocity_kph":
-            fastest_asteroid = max(
-                asteroids,
-                key=lambda x: float(x["relative_velocity_kph"])
-                if isinstance(x["relative_velocity_kph"], (int, float, str))
-                else float("-inf"),
-                default=None,
+        if attribute_key == "smallest_diameter_meter":
+            return self._find_extreme_asteroid(
+                asteroids, "min_diameter_m", "min", "smallest_asteroid"
             )
-            return {"fastest_asteroid": fastest_asteroid} if fastest_asteroid else {}
 
-        if self.entity_description.key == "slowest_velocity_kph":
-            slowest_asteroid = min(
-                asteroids,
-                key=lambda x: float(x["relative_velocity_kph"])
-                if isinstance(x["relative_velocity_kph"], (int, float, str))
-                else float("inf"),
-                default=None,
+        if attribute_key == "fastest_velocity_kph":
+            return self._find_extreme_asteroid(
+                asteroids, "relative_velocity_kph", "max", "fastest_asteroid"
             )
-            return {"slowest_asteroid": slowest_asteroid} if slowest_asteroid else {}
+
+        if attribute_key == "slowest_velocity_kph":
+            return self._find_extreme_asteroid(
+                asteroids, "relative_velocity_kph", "min", "slowest_asteroid"
+            )
 
         return {
             "asteroids": asteroids,
         }
+
+    def _find_extreme_asteroid(
+        self,
+        asteroids: list[dict[str, Any]],
+        field: str,
+        type: str,
+        attribute_name: str,
+    ) -> dict[str, Any]:
+        """Find the extreme (min or max) asteroid based on a specific field."""
+        if type not in ("max", "min"):
+            raise ValueError("type must be either min or max")
+
+        # Determine the default value for comparison
+        default_value = float("inf") if type == "min" else float("-inf")
+
+        # Handle empty asteroid list
+        if not asteroids:
+            return {}
+
+        # Extract the extreme asteroid
+        if type == "min":
+            extreme_asteroid = min(
+                asteroids,
+                key=lambda x: float(x[field])
+                if isinstance(x[field], (int, float, str))
+                else default_value,
+            )
+        else:
+            extreme_asteroid = max(
+                asteroids,
+                key=lambda x: float(x[field])
+                if isinstance(x[field], (int, float, str))
+                else default_value,
+            )
+
+        return {attribute_name: extreme_asteroid} if extreme_asteroid else {}

@@ -36,7 +36,6 @@ def mock_coordinator() -> MagicMock:
                     season="winter",
                     first_utc="2024-01-01T00:00:00Z",
                     last_utc="2024-01-02T00:00:00Z",
-                    humidity=10.5,
                 )
             ]
         }

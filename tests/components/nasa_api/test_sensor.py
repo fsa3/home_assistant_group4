@@ -191,7 +191,7 @@ def test_extra_state_attributes(mock_coordinator) -> None:
     asteroid_1_attrs = attributes["asteroids"][0]
     assert asteroid_1_attrs["id"] == "1"
     assert math.isclose(
-        asteroid_1_attrs["diameter_m"], 1500, rel_tol=1e-9
+        asteroid_1_attrs["max_diameter_m"], 1500, rel_tol=1e-9
     )  # Largest diameter
     assert asteroid_1_attrs["hazardous"] == "Yes"
     assert asteroid_1_attrs["close_approach_date"] == "2024-Jan-01 00:00"
@@ -202,7 +202,7 @@ def test_extra_state_attributes(mock_coordinator) -> None:
     asteroid_2_attrs = attributes["asteroids"][1]
     assert asteroid_2_attrs["id"] == "2"
     assert math.isclose(
-        asteroid_2_attrs["diameter_m"], 600, rel_tol=1e-9
+        asteroid_2_attrs["max_diameter_m"], 600, rel_tol=1e-9
     )  # Largest diameter
     assert asteroid_2_attrs["hazardous"] == "No"
     assert asteroid_2_attrs["close_approach_date"] == "2024-Feb-01 00:00"
