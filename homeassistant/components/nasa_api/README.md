@@ -56,8 +56,7 @@ NASA's APOD provides a daily image with an accompanying description, offering in
   - `description`: A detailed explanation.
   - `date`: The date the APOD was featured.
 
-<img src="../components/nasa_api/images/APOD.png" alt="APOD Image" width="500" />
-
+<img src="/homeassistant/components/nasa_api/images/APOD.png" alt="APOD Image" width="500" />
 *Example of an Astronomy Picture of the Day displayed in the Home Assistant dashboard.*
 
 #### Example Data
