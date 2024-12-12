@@ -186,7 +186,7 @@ Home Assistant provides a comprehensive step-by-step guide on how to create a cu
 
 <img src="/homeassistant/components/nasa_api/images/custom_dash.png" alt="Example of a NASA Integration custom dashboard" width="800" />
 
-*Example of a custom dashboard for the NASA integration in Home Assistant. It displays detailed information about Near-Earth Objects (NEOs), the Astronomy Picture of the Day (APOD), and Mars Weather. The layout is organized and interactive. **Click on the image to view a zoomed-in version.***
+*Example of a custom dashboard for the NASA integration in Home Assistant. It displays detailed information about Near-Earth Objects (NEOs), the Astronomy Picture of the Day (APOD), and Mars Weather. The layout is organized and interactive.*
 
 ---
 
