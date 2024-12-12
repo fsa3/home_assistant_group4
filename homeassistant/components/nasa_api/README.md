@@ -146,6 +146,7 @@ NASA’s InSight Mars Weather API provides daily weather updates from Mars, offe
 *Example of Mars Weather in the card view, showing the current temperature and weather condition.*
 
 **Expanded View**
+
 <img src="/homeassistant/components/nasa_api/images/Mars_2.png" alt="Mars Weather Expanded View" width="500" />
 
 *Example of Mars Weather in the expanded view, showing more detailed weather information like pressure and wind speed.*
@@ -183,17 +184,9 @@ A custom dashboard will allow you to display detailed information for all availa
 creating an intuitive and personalized interface for monitoring your data.
 Home Assistant provides a comprehensive step-by-step guide on how to create a custom dashboard, which can be found here:  [Home Assistant Documentation on Creating Dashboards](https://www.home-assistant.io/lovelace/)
 
-<a href="javascript:void(0);" onclick="document.getElementById('popup').style.display='block'">
-  <img src="/homeassistant/components/nasa_api/images/custom_dash.png" alt="Example of a NASA Integration custom dashboard" width="800">
-</a>
-
-<div id="popup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,0.8); z-index:999;">
-  <span onclick="document.getElementById('popup').style.display='none'" style="position:absolute; top:10px; right:25px; color:white; font-size:36px; font-weight:bold;">&times;</span>
-  <img src="/homeassistant/components/nasa_api/images/custom_dash.png" style="position:relative; top:50%; left:50%; transform:translate(-50%, -50%); max-width:100%; max-height:100%;">
-</div>
+<img src="/homeassistant/components/nasa_api/images/custom_dash.png" alt="Example of a NASA Integration custom dashboard" width="800" />
 
 *Example of a custom dashboard for the NASA integration in Home Assistant. It displays detailed information about Near-Earth Objects (NEOs), the Astronomy Picture of the Day (APOD), and Mars Weather. The layout is organized and interactive. **Click on the image to view a zoomed-in version.***
-
 
 ---
 
