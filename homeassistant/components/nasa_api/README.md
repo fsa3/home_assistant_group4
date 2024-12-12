@@ -6,7 +6,7 @@ This integration supports the following APIs:
 
 - **APOD (Astronomy Picture of the Day)**: Showcases daily astronomy-related imagery.
 - **Asteroids - NeoWs (Near Earth Object Web Service)**: Tracks near-Earth objects (NEOs), including their sizes, velocities, and hazard potential.
-- **InSight: Mars Weather Service**: Displays real-time Martian weather data from NASA's InSight lander.
+- **InSight: Mars Weather Service**: Displays Martian weather data from NASA's InSight lander.
 
 ---
 
@@ -129,7 +129,7 @@ When you click on any of the summary statistics in the NEO card (e.g., Average N
 
 ### InSight: Mars Weather Service
 
-The InSight Mars Weather integration uses the **WeatherEntity** from Home Assistant. This entity fetches real-time weather data from NASA’s InSight Mars lander API. It provides details about Mars’ temperature, atmospheric pressure, wind speed, and season. These values are made available in Home Assistant’s dashboard as a weather entity.
+The InSight Mars Weather integration uses the **WeatherEntity** from Home Assistant. This entity fetches  weather data from NASA’s InSight Mars lander API. It provides details about Mars’ temperature, atmospheric pressure, wind speed, and season. These values are made available in Home Assistant’s dashboard as a weather entity.
 
 - **WeatherEntity** is specifically designed for displaying weather-related data. It provides attributes like temperature, pressure, wind speed, and conditions, making it ideal for tracking weather information from both Earth and other planets, like Mars in this case.
 
@@ -156,7 +156,7 @@ NASA’s InSight Mars Weather API provides daily weather updates from Mars, offe
 - sensor.mars_temperature (min/max/average)
 - sensor.mars_pressure (atmospheric pressure)
 - sensor.mars_wind_speed (wind speed)
-- These sensors display real-time data about the Martian climate.
+- These sensors display data about the Martian climate.
 
 #### Example in Home Assistant
 
